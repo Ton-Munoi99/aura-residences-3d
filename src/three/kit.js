@@ -7,6 +7,7 @@
 // on, while React/R3F owns composition, lighting, camera, controls and events.
 // ============================================================================
 import { UNITS, statusColor, FH } from '../data.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 export function makeKit(THREE) {
   const T = THREE;
@@ -49,33 +50,38 @@ export function makeKit(THREE) {
 
   // ---- low-level helpers ----
   const b = (w, h, d, mat) => new T.Mesh(new T.BoxGeometry(w, h, d), mat);
-  const cy = (r1, r2, h, mat, seg) => new T.Mesh(new T.CylinderGeometry(r1, r2, h, seg || 16), mat);
+  const rb = (w, h, d, mat, radius = 0.08, seg = 4) => {
+    const safeRadius = Math.min(radius, w * 0.48, h * 0.48, d * 0.48);
+    return new T.Mesh(new RoundedBoxGeometry(w, h, d, seg, safeRadius), mat);
+  };
+  const cy = (r1, r2, h, mat, seg) => new T.Mesh(new T.CylinderGeometry(r1, r2, h, seg || 32), mat);
+  const sph = (r, mat, width = 24, height = 16) => new T.Mesh(new T.SphereGeometry(r, width, height), mat);
   const p = (g, m, x, y, z, sh) => { m.position.set(x, y, z); if (sh) m.castShadow = true; g.add(m); return m; };
 
   // ---- furniture ----
   function fSofa(w, col) {
     const g = new T.Group(); const mat = col || MAT.sofa;
-    p(g, b(w, 0.4, 1.0, mat), 0, 0.35, 0);
-    p(g, b(w, 0.55, 0.22, mat), 0, 0.62, -0.39);
-    p(g, b(0.22, 0.45, 1.0, mat), -w / 2 + 0.11, 0.55, 0);
-    p(g, b(0.22, 0.45, 1.0, mat), w / 2 - 0.11, 0.55, 0);
+    p(g, rb(w, 0.4, 1.0, mat, 0.14), 0, 0.35, 0);
+    p(g, rb(w, 0.55, 0.22, mat, 0.09), 0, 0.62, -0.39);
+    p(g, rb(0.22, 0.45, 1.0, mat, 0.09), -w / 2 + 0.11, 0.55, 0);
+    p(g, rb(0.22, 0.45, 1.0, mat, 0.09), w / 2 - 0.11, 0.55, 0);
     const n = Math.max(2, Math.round(w / 0.9));
-    for (let i = 0; i < n; i++) p(g, b(w / n - 0.06, 0.16, 0.85, MAT.fabric), -w / 2 + (w / n) * (i + 0.5), 0.6, 0.02);
-    [-w / 2 + 0.18, w / 2 - 0.18].forEach((x) => [-0.42, 0.42].forEach((z) => p(g, b(0.08, 0.18, 0.08, MAT.woodD), x, 0.09, z)));
+    for (let i = 0; i < n; i++) p(g, rb(w / n - 0.06, 0.16, 0.85, MAT.fabric, 0.06), -w / 2 + (w / n) * (i + 0.5), 0.6, 0.02);
+    [-w / 2 + 0.18, w / 2 - 0.18].forEach((x) => [-0.42, 0.42].forEach((z) => p(g, rb(0.08, 0.18, 0.08, MAT.woodD, 0.025, 3), x, 0.09, z)));
     return g;
   }
   function fTable(w, d, h, top) {
     const g = new T.Group();
-    p(g, b(w, 0.08, d, top || MAT.wood), 0, h, 0);
+    p(g, rb(w, 0.08, d, top || MAT.wood, 0.05), 0, h, 0);
     [[-w / 2 + 0.1, -d / 2 + 0.1], [w / 2 - 0.1, -d / 2 + 0.1], [-w / 2 + 0.1, d / 2 - 0.1], [w / 2 - 0.1, d / 2 - 0.1]]
-      .forEach(([x, z]) => p(g, b(0.08, h, 0.08, MAT.woodD), x, h / 2, z));
+      .forEach(([x, z]) => p(g, rb(0.08, h, 0.08, MAT.woodD, 0.025, 3), x, h / 2, z));
     return g;
   }
   function fChair() {
     const g = new T.Group();
-    p(g, b(0.46, 0.06, 0.46, MAT.woodL), 0, 0.46, 0);
-    p(g, b(0.46, 0.5, 0.06, MAT.woodL), 0, 0.72, -0.2);
-    [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]].forEach(([x, z]) => p(g, b(0.05, 0.46, 0.05, MAT.woodD), x, 0.23, z));
+    p(g, rb(0.46, 0.06, 0.46, MAT.woodL, 0.035), 0, 0.46, 0);
+    p(g, rb(0.46, 0.5, 0.06, MAT.woodL, 0.035), 0, 0.72, -0.2);
+    [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]].forEach(([x, z]) => p(g, rb(0.05, 0.46, 0.05, MAT.woodD, 0.02, 3), x, 0.23, z));
     return g;
   }
   function fDining(seats) {
@@ -97,12 +103,12 @@ export function makeKit(THREE) {
   }
   function fBed(w) {
     const g = new T.Group();
-    p(g, b(w, 0.3, 2.1, MAT.woodD), 0, 0.2, 0);
-    p(g, b(w - 0.1, 0.22, 2.0, MAT.white), 0, 0.42, 0.02);
-    p(g, b(w - 0.1, 0.12, 1.3, MAT.fabric), 0, 0.55, 0.35);
-    p(g, b(w, 0.8, 0.12, MAT.fabric), 0, 0.55, -1.0);
-    [-w / 2 + 0.35, w / 2 - 0.35].forEach((x) => p(g, b(0.5, 0.18, 0.32, MAT.white), x, 0.52, -0.78));
-    [-w / 2 - 0.32, w / 2 + 0.32].forEach((x) => { p(g, b(0.5, 0.42, 0.42, MAT.woodL), x, 0.21, -0.7); p(g, fLamp(), x, 0.42, -0.7); });
+    p(g, rb(w, 0.3, 2.1, MAT.woodD, 0.09), 0, 0.2, 0);
+    p(g, rb(w - 0.1, 0.22, 2.0, MAT.white, 0.12), 0, 0.42, 0.02);
+    p(g, rb(w - 0.1, 0.12, 1.3, MAT.fabric, 0.08), 0, 0.55, 0.35);
+    p(g, rb(w, 0.8, 0.12, MAT.fabric, 0.06), 0, 0.55, -1.0);
+    [-w / 2 + 0.35, w / 2 - 0.35].forEach((x) => p(g, rb(0.5, 0.18, 0.32, MAT.white, 0.06), x, 0.52, -0.78));
+    [-w / 2 - 0.32, w / 2 + 0.32].forEach((x) => { p(g, rb(0.5, 0.42, 0.42, MAT.woodL, 0.05), x, 0.21, -0.7); p(g, fLamp(), x, 0.42, -0.7); });
     return g;
   }
   function fWardrobe(w) {
@@ -120,35 +126,35 @@ export function makeKit(THREE) {
   }
   function fKitchen(len, island) {
     const g = new T.Group();
-    p(g, b(len, 0.9, 0.62, MAT.woodL), 0, 0.45, 0);
-    p(g, b(len + 0.06, 0.06, 0.66, MAT.marbleD), 0, 0.92, 0);
-    p(g, b(0.45, 0.04, 0.34, MAT.steel), len * 0.18, 0.95, 0);
-    p(g, b(0.5, 0.02, 0.5, MAT.dark), -len * 0.2, 0.95, 0);
+    p(g, rb(len, 0.9, 0.62, MAT.woodL, 0.06), 0, 0.45, 0);
+    p(g, rb(len + 0.06, 0.06, 0.66, MAT.marbleD, 0.04), 0, 0.92, 0);
+    p(g, rb(0.45, 0.04, 0.34, MAT.steel, 0.025), len * 0.18, 0.95, 0);
+    p(g, rb(0.5, 0.02, 0.5, MAT.dark, 0.02), -len * 0.2, 0.95, 0);
     p(g, b(len * 0.8, 0.5, 0.34, MAT.woodL), 0, 1.85, -0.14);
     p(g, b(0.6, 1.6, 0.6, MAT.steel), len / 2 - 0.3, 0.8, 0);
     p(g, b(0.5, 0.5, 0.34, MAT.dark), len * 0.2, 1.85, -0.14);
     if (island) {
       const is = new T.Group();
-      p(is, b(2.2, 0.9, 0.95, MAT.woodD), 0, 0.45, 0);
-      p(is, b(2.3, 0.07, 1.05, MAT.marble), 0, 0.93, 0);
+      p(is, rb(2.2, 0.9, 0.95, MAT.woodD, 0.08), 0, 0.45, 0);
+      p(is, rb(2.3, 0.07, 1.05, MAT.marble, 0.04), 0, 0.93, 0);
       is.position.set(0, 0, island); g.add(is);
     }
     return g;
   }
   function fBath() {
     const g = new T.Group();
-    p(g, b(1.0, 0.85, 0.5, MAT.woodL), -0.5, 0.42, 0);
-    p(g, b(1.05, 0.05, 0.55, MAT.marble), -0.5, 0.87, 0);
-    p(g, b(0.4, 0.12, 0.32, MAT.white), -0.5, 0.9, 0);
+    p(g, rb(1.0, 0.85, 0.5, MAT.woodL, 0.06), -0.5, 0.42, 0);
+    p(g, rb(1.05, 0.05, 0.55, MAT.marble, 0.035), -0.5, 0.87, 0);
+    p(g, rb(0.4, 0.12, 0.32, MAT.white, 0.05), -0.5, 0.9, 0);
     p(g, b(0.7, 0.7, 0.04, MAT.glass), -0.5, 1.5, -0.24);
-    p(g, b(0.55, 0.7, 0.55, MAT.white), 0.5, 0.35, 0.2);
+    p(g, rb(0.55, 0.7, 0.55, MAT.white, 0.12), 0.5, 0.35, 0.2);
     p(g, b(0.04, 1.9, 1.0, MAT.glass), 0.0, 0.95, -0.2);
     return g;
   }
   function fPlant(h) {
     const g = new T.Group();
     p(g, cy(0.16, 0.2, 0.3, MAT.pot), 0, 0.15, 0);
-    p(g, new T.Mesh(new T.SphereGeometry(h * 0.4, 10, 10), MAT.plant), 0, 0.3 + h * 0.4, 0);
+    p(g, sph(h * 0.4, MAT.plant), 0, 0.3 + h * 0.4, 0);
     return g;
   }
   function fRug(w, d, col) { return b(w, 0.02, d, col || MAT.rug); }
@@ -160,12 +166,12 @@ export function makeKit(THREE) {
   }
   function fCar(col) {
     const g = new T.Group();
-    p(g, b(4.2, 0.7, 1.8, col), 0, 0.55, 0, true);
-    p(g, b(2.6, 0.6, 1.6, col), -0.1, 1.05, 0, true);
-    p(g, b(2.4, 0.5, 1.5, MAT.carGlass), -0.1, 1.05, 0);
-    [[-1.3, 0.9], [1.3, 0.9], [-1.3, -0.9], [1.3, -0.9]].forEach(([x, z]) => { const w = cy(0.34, 0.34, 0.25, MAT.black, 18); w.rotation.x = Math.PI / 2; p(g, w, x, 0.34, z); });
-    p(g, b(0.1, 0.18, 0.5, MAT.warm), 2.1, 0.55, 0.55);
-    p(g, b(0.1, 0.18, 0.5, MAT.warm), 2.1, 0.55, -0.55);
+    p(g, rb(4.2, 0.7, 1.8, col, 0.22), 0, 0.55, 0, true);
+    p(g, rb(2.6, 0.6, 1.6, col, 0.18), -0.1, 1.05, 0, true);
+    p(g, rb(2.4, 0.5, 1.5, MAT.carGlass, 0.14), -0.1, 1.05, 0);
+    [[-1.3, 0.9], [1.3, 0.9], [-1.3, -0.9], [1.3, -0.9]].forEach(([x, z]) => { const w = cy(0.34, 0.34, 0.25, MAT.black, 36); w.rotation.x = Math.PI / 2; p(g, w, x, 0.34, z); });
+    p(g, rb(0.1, 0.18, 0.5, MAT.warm, 0.04), 2.1, 0.55, 0.55);
+    p(g, rb(0.1, 0.18, 0.5, MAT.warm, 0.04), 2.1, 0.55, -0.55);
     return g;
   }
 
@@ -250,14 +256,14 @@ export function makeKit(THREE) {
       p(g, b(5.0, h, 0.1, MAT.wall2), -6.0, h / 2, -2.6);
       p(g, fArt(2.0, 1.2), 2.0, 2.0, -5.9); p(g, fPlant(1.6), 8.2, 0.06, 4.0); p(g, fPlant(1.3), -1.0, 0.06, -4.0);
       const ch = new T.Group();
-      for (let i = 0; i < 5; i++) p(ch, new T.Mesh(new T.SphereGeometry(0.12, 10, 10), MAT.warm), (i - 2) * 0.4, -Math.random() * 0.4, 0);
+      for (let i = 0; i < 5; i++) p(ch, sph(0.12, MAT.warm, 18, 12), (i - 2) * 0.4, -Math.random() * 0.4, 0);
       p(g, ch, 5.0, h - 0.4, -0.6);
       anchors = { overview: [[13, 6.5, 14], [0, 1.6, 0]], living: [[3.0, 2.0, 8.0], [2.0, 1.0, 2.0]], kitchen: [[1.5, 2.4, -0.5], [4.6, 0.9, -3.6]], dining: [[2.0, 2.2, 1.5], [5.0, 0.9, -0.6]], master: [[-2.0, 2.2, 4.0], [-6.0, 0.9, 0.5]], terrace: [[2.0, 2.0, 5.5], [3.0, 1.0, 9.5]] };
     }
     g.add(new T.AmbientLight(0xfff1e2, 0.22));
     const L = new T.PointLight(0xffe6c0, 0.85, kind === 'PH' ? 40 : 26, 1); L.position.set(0, h - 0.3, 0.3); g.add(L);
     const L2 = new T.PointLight(0xffe6c0, 0.55, 22, 1); L2.position.set(X * 0.4, h - 0.3, -Z * 0.4); g.add(L2);
-    for (let i = 0; i < 3; i++) { const c = new T.Mesh(new T.CircleGeometry(0.18, 16), MAT.warm); c.rotation.x = Math.PI / 2; p(g, c, (i - 1) * X * 0.5, h - 0.06, 0); }
+    for (let i = 0; i < 3; i++) { const c = new T.Mesh(new T.CircleGeometry(0.18, 32), MAT.warm); c.rotation.x = Math.PI / 2; p(g, c, (i - 1) * X * 0.5, h - 0.06, 0); }
     g.userData.anchors = anchors;
     return g;
   }
@@ -278,7 +284,7 @@ export function makeKit(THREE) {
     }
     for (let x = -12; x <= -6; x += 5.2) p(g, b(0.3, 1.4, 0.3, MAT.gold), x, 0.7, -9.4);
     p(g, b(6, 0.15, 8, MAT.road), 16, 1.4, 0).rotation.z = 0.25;
-    for (let i = 0; i < 6; i++) { const c = new T.Mesh(new T.CircleGeometry(0.3, 12), MAT.warm); c.rotation.x = Math.PI / 2; p(g, c, -12 + i * 5, h - 0.07, 0); }
+    for (let i = 0; i < 6; i++) { const c = new T.Mesh(new T.CircleGeometry(0.3, 32), MAT.warm); c.rotation.x = Math.PI / 2; p(g, c, -12 + i * 5, h - 0.07, 0); }
     g.add(new T.AmbientLight(0xdfe6f0, 0.28));
     const al = new T.PointLight(0xcfe0ff, 0.85, 60, 1); al.position.set(0, h - 0.4, 0); g.add(al);
     const al2 = new T.PointLight(0xcfe0ff, 0.6, 45, 1); al2.position.set(-10, h - 0.4, 4); g.add(al2);
@@ -303,14 +309,14 @@ export function makeKit(THREE) {
     for (let i = -1; i <= 1; i++) {
       p(g, b(0.12, 2.6, 1.5, MAT.brass), W / 2 - 0.1, 1.4, i * 3);
       p(g, b(0.06, 0.2, 1.5, MAT.dark), W / 2 - 0.18, 2.7, i * 3);
-      const c = new T.Mesh(new T.CircleGeometry(0.08, 12), MAT.warm); c.rotation.y = -Math.PI / 2; p(g, c, W / 2 - 0.22, 1.6, i * 3 + 0.85);
+      const c = new T.Mesh(new T.CircleGeometry(0.08, 24), MAT.warm); c.rotation.y = -Math.PI / 2; p(g, c, W / 2 - 0.22, 1.6, i * 3 + 0.85);
     }
     let s = fSofa(3.0); s.position.set(-5, 0, 3); s.rotation.y = 0; g.add(s);
     let s2 = fSofa(3.0, MAT.sofa2); s2.position.set(-5, 0, 5.6); s2.rotation.y = Math.PI; g.add(s2);
     p(g, fTable(1.4, 0.7, 0.34, MAT.marble), -5, 0, 4.3);
     p(g, fPlant(1.8), -7.5, 0.08, -2); p(g, fPlant(1.6), 6, 0.08, 5.5); p(g, fRug(5, 4, MAT.rugD), -5, 0.1, 4.3);
     const ch = new T.Group();
-    for (let i = 0; i < 14; i++) p(ch, new T.Mesh(new T.SphereGeometry(0.13, 10, 10), MAT.warm), (Math.random() - 0.5) * 3.2, -Math.random() * 1.8, (Math.random() - 0.5) * 2.4);
+    for (let i = 0; i < 14; i++) p(ch, sph(0.13, MAT.warm, 18, 12), (Math.random() - 0.5) * 3.2, -Math.random() * 1.8, (Math.random() - 0.5) * 2.4);
     p(g, ch, 0, h - 0.6, 1);
     g.add(new T.AmbientLight(0xfff0d8, 0.3));
     g.add(new T.HemisphereLight(0xfff2dc, 0x3a3026, 0.22));
@@ -335,7 +341,7 @@ export function makeKit(THREE) {
       t.position.set(i * 1.4, 0, -3.5); g.add(t);
     }
     p(g, b(2.6, 1.4, 0.4, MAT.steel), -4, 0.7, 2.5);
-    for (let i = 0; i < 4; i++) { const w = cy(0.18, 0.18, 0.5, MAT.dark, 16); w.rotation.z = Math.PI / 2; p(g, w, -5 + i * 0.7, 0.5, 2.7); }
+    for (let i = 0; i < 4; i++) { const w = cy(0.18, 0.18, 0.5, MAT.dark, 32); w.rotation.z = Math.PI / 2; p(g, w, -5 + i * 0.7, 0.5, 2.7); }
     p(g, b(0.5, 0.5, 1.8, MAT.black), 3, 0.45, 2);
     p(g, b(1.8, 1.6, 0.3, MAT.steel), 5, 0.8, 3);
     for (let i = 0; i < 3; i++) p(g, b(0.7, 0.04, 1.8, i % 2 ? MAT.sofa2 : MAT.gold), -5 + i * 0.9, 0.04, 5);
@@ -367,8 +373,8 @@ export function makeKit(THREE) {
     p(g, b(w, 0.05, 0.06, MAT.mullion), bx, base + 1.26, sz + s * 1.75);
     // a single trough planter with soft greenery (kept subtle)
     p(g, b(w - 1.0, 0.28, 0.45, MAT.bronze), bx, base + 0.42, zc + s * 0.55);
-    p(g, new T.Mesh(new T.SphereGeometry(0.55, 10, 10), MAT.foliage), bx - 0.5, base + 0.82, zc + s * 0.55);
-    p(g, new T.Mesh(new T.SphereGeometry(0.5, 10, 10), MAT.foliageD), bx + 0.5, base + 0.8, zc + s * 0.55);
+    p(g, sph(0.55, MAT.foliage), bx - 0.5, base + 0.82, zc + s * 0.55);
+    p(g, sph(0.5, MAT.foliageD), bx + 0.5, base + 0.8, zc + s * 0.55);
   }
 
   function buildTower(building) {
@@ -423,7 +429,7 @@ export function makeKit(THREE) {
           p(g, b(w, 0.06, d, MAT.mullion), x, base + 1.05, z);
         });
         p(g, b(17, 0.3, 12, MAT.concrete), 0, base + FH + 0.05, 0, true).receiveShadow = true;
-        for (let x = -7; x <= 7; x += 2.3) { p(g, b(1.4, 0.45, 1.0, MAT.bronze), x, base + 0.48, 5.2); p(g, new T.Mesh(new T.SphereGeometry(0.8, 10, 10), MAT.foliage), x, base + 1.2, 5.2); }
+        for (let x = -7; x <= 7; x += 2.3) { p(g, rb(1.4, 0.45, 1.0, MAT.bronze, 0.08), x, base + 0.48, 5.2); p(g, sph(0.8, MAT.foliage), x, base + 1.2, 5.2); }
       }
 
       const pb = p(g, new T.Mesh(new T.BoxGeometry(hx * 2 + 1.2, FH, hz * 2 + 1.2), new T.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })), 0, base + FH / 2, 0);
@@ -443,11 +449,11 @@ export function makeKit(THREE) {
     p(g, b(0.04, 0.9, 12, MAT.glass), -8.5, 0.5, 0);
     p(g, b(5, 1.1, 1.0, MAT.woodD), -4, 0.55, -4);
     p(g, b(5.2, 0.08, 1.1, MAT.marbleD), -4, 1.12, -4);
-    for (let i = -1; i <= 1; i++) p(g, cy(0.18, 0.2, 0.7, MAT.dark, 14), -5 + i * 1.4, 0.35, -3.0);
+    for (let i = -1; i <= 1; i++) p(g, cy(0.18, 0.2, 0.7, MAT.dark, 32), -5 + i * 1.4, 0.35, -3.0);
     let s = fSofa(3.0, MAT.sofa2); s.position.set(3, 0, 2); s.rotation.y = Math.PI; g.add(s);
     let s2 = fSofa(2.4); s2.position.set(5.5, 0, 0); s2.rotation.y = -Math.PI / 2; g.add(s2);
-    p(g, cy(0.7, 0.7, 0.4, MAT.marbleD, 20), 4, 0.2, 0.5);
-    p(g, cy(0.5, 0.5, 0.2, MAT.warm, 16), 4, 0.45, 0.5);
+    p(g, cy(0.7, 0.7, 0.4, MAT.marbleD, 40), 4, 0.2, 0.5);
+    p(g, cy(0.5, 0.5, 0.2, MAT.warm, 40), 4, 0.45, 0.5);
     p(g, b(8, 0.15, 5, MAT.woodD), 3, 3.0, 1);
     for (let x = 0; x <= 6; x += 6) for (let z = -1; z <= 3; z += 4) p(g, b(0.16, 3, 0.16, MAT.woodD), x, 1.5, z);
     for (let i = 0; i < 5; i++) p(g, fPlant(1.4), -8 + i * 1.6, 0.1, 5.4);
