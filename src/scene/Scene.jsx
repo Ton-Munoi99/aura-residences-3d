@@ -284,8 +284,8 @@ export default function Scene() {
   return (
     <Canvas
       shadows
-      dpr={[1, 2]}
-      gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+      dpr={[1, 2.5]}
+      gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
       camera={{ fov: 42, near: 0.4, far: 500, position: [40, 28, 46] }}
       onCreated={({ gl, scene }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;

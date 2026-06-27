@@ -113,15 +113,15 @@ export function makeKit(THREE) {
   }
   function fWardrobe(w) {
     const g = new T.Group();
-    p(g, b(w, 2.2, 0.55, MAT.woodL), 0, 1.1, 0);
+    p(g, rb(w, 2.2, 0.55, MAT.woodL, 0.06), 0, 1.1, 0);
     const cnt = Math.round(w / 0.6);
-    for (let i = 0; i < cnt; i++) p(g, b(0.02, 1.8, 0.02, MAT.metal), -w / 2 + 0.05 + (w / cnt) * (i + 0.5), 1.1, 0.28);
+    for (let i = 0; i < cnt; i++) p(g, rb(0.02, 1.8, 0.02, MAT.metal, 0.008, 2), -w / 2 + 0.05 + (w / cnt) * (i + 0.5), 1.1, 0.28);
     return g;
   }
   function fTV(w) {
     const g = new T.Group();
-    p(g, b(w, 0.4, 0.4, MAT.woodD), 0, 0.2, 0);
-    p(g, b(Math.min(w, 1.7), 0.96, 0.06, MAT.screen), 0, 1.15, -0.1);
+    p(g, rb(w, 0.4, 0.4, MAT.woodD, 0.05), 0, 0.2, 0);
+    p(g, rb(Math.min(w, 1.7), 0.96, 0.06, MAT.screen, 0.035), 0, 1.15, -0.1);
     return g;
   }
   function fKitchen(len, island) {
@@ -130,9 +130,9 @@ export function makeKit(THREE) {
     p(g, rb(len + 0.06, 0.06, 0.66, MAT.marbleD, 0.04), 0, 0.92, 0);
     p(g, rb(0.45, 0.04, 0.34, MAT.steel, 0.025), len * 0.18, 0.95, 0);
     p(g, rb(0.5, 0.02, 0.5, MAT.dark, 0.02), -len * 0.2, 0.95, 0);
-    p(g, b(len * 0.8, 0.5, 0.34, MAT.woodL), 0, 1.85, -0.14);
-    p(g, b(0.6, 1.6, 0.6, MAT.steel), len / 2 - 0.3, 0.8, 0);
-    p(g, b(0.5, 0.5, 0.34, MAT.dark), len * 0.2, 1.85, -0.14);
+    p(g, rb(len * 0.8, 0.5, 0.34, MAT.woodL, 0.04), 0, 1.85, -0.14);
+    p(g, rb(0.6, 1.6, 0.6, MAT.steel, 0.08), len / 2 - 0.3, 0.8, 0);
+    p(g, rb(0.5, 0.5, 0.34, MAT.dark, 0.04), len * 0.2, 1.85, -0.14);
     if (island) {
       const is = new T.Group();
       p(is, rb(2.2, 0.9, 0.95, MAT.woodD, 0.08), 0, 0.45, 0);
@@ -157,11 +157,11 @@ export function makeKit(THREE) {
     p(g, sph(h * 0.4, MAT.plant), 0, 0.3 + h * 0.4, 0);
     return g;
   }
-  function fRug(w, d, col) { return b(w, 0.02, d, col || MAT.rug); }
+  function fRug(w, d, col) { return rb(w, 0.02, d, col || MAT.rug, 0.02, 2); }
   function fArt(w, h) {
     const g = new T.Group();
-    p(g, b(w, h, 0.04, MAT.woodD), 0, 0, 0);
-    p(g, b(w - 0.08, h - 0.08, 0.05, MAT.fabric), 0, 0, 0.01);
+    p(g, rb(w, h, 0.04, MAT.woodD, 0.035), 0, 0, 0);
+    p(g, rb(w - 0.08, h - 0.08, 0.05, MAT.fabric, 0.025), 0, 0, 0.01);
     return g;
   }
   function fCar(col) {
@@ -238,8 +238,8 @@ export function makeKit(THREE) {
     } else {
       X = 9; Z = 6; h = 3.3; room(g, X, Z, h, true);
       p(g, b(X * 2, 0.12, 3.4, MAT.stone), 0, 0, Z + 1.7).receiveShadow = true;
-      p(g, b(2.4, 0.5, 2.0, MAT.tile), X - 2.4, 0.25, Z + 1.7);
-      p(g, b(2.1, 0.4, 1.7, MAT.water), X - 2.4, 0.45, Z + 1.7);
+      p(g, rb(2.4, 0.5, 2.0, MAT.tile, 0.12), X - 2.4, 0.25, Z + 1.7);
+      p(g, rb(2.1, 0.4, 1.7, MAT.water, 0.16), X - 2.4, 0.45, Z + 1.7);
       p(g, b(X * 2, 0.06, 0.06, MAT.glass), 0, 1.0, Z + 3.4);
       { const cnt = Math.round((X * 2) / 1.2); for (let i = 0; i <= cnt; i++) p(g, b(0.04, 1.0, 0.04, MAT.steel), -X + ((X * 2) / cnt) * i, 0.5, Z + 3.4); }
       let lo = fSofa(2.0, MAT.sofa2); lo.position.set(-X + 2.5, 0, Z + 1.6); g.add(lo);
@@ -273,7 +273,7 @@ export function makeKit(THREE) {
     const g = new T.Group(); const W = 30, D = 20, h = 3.2;
     p(g, b(W, 0.2, D, MAT.dark), 0, 0, 0).receiveShadow = true;
     p(g, b(W, 0.1, D, MAT.marbleD), 0, h, 0);
-    for (let x = -12; x <= 12; x += 8) for (let z = -7; z <= 7; z += 7) p(g, b(0.6, h, 0.6, MAT.stone), x, h / 2, z, true);
+    for (let x = -12; x <= 12; x += 8) for (let z = -7; z <= 7; z += 7) p(g, rb(0.6, h, 0.6, MAT.stone, 0.05), x, h / 2, z, true);
     const cols = [MAT.car1, MAT.car2, MAT.car3, MAT.car1, MAT.car2]; let ci = 0;
     for (let z = -8; z <= 8; z += 16) {
       for (let x = -13; x <= 13; x += 2.6) p(g, b(0.08, 0.02, 4.6, MAT.white), x, 0.12, z < 0 ? -6 : 6);
@@ -282,8 +282,8 @@ export function makeKit(THREE) {
         if (z > 0) car.rotation.y = Math.PI; if (Math.random() > 0.7) continue; g.add(car);
       }
     }
-    for (let x = -12; x <= -6; x += 5.2) p(g, b(0.3, 1.4, 0.3, MAT.gold), x, 0.7, -9.4);
-    p(g, b(6, 0.15, 8, MAT.road), 16, 1.4, 0).rotation.z = 0.25;
+    for (let x = -12; x <= -6; x += 5.2) p(g, rb(0.3, 1.4, 0.3, MAT.gold, 0.05), x, 0.7, -9.4);
+    p(g, rb(6, 0.15, 8, MAT.road, 0.08), 16, 1.4, 0).rotation.z = 0.25;
     for (let i = 0; i < 6; i++) { const c = new T.Mesh(new T.CircleGeometry(0.3, 32), MAT.warm); c.rotation.x = Math.PI / 2; p(g, c, -12 + i * 5, h - 0.07, 0); }
     g.add(new T.AmbientLight(0xdfe6f0, 0.28));
     const al = new T.PointLight(0xcfe0ff, 0.85, 60, 1); al.position.set(0, h - 0.4, 0); g.add(al);
@@ -303,12 +303,12 @@ export function makeKit(THREE) {
     for (let i = -3; i <= 3; i++) p(g, b(0.14, h, 0.14, MAT.dark), i * 2.6, h / 2, D / 2);
     p(g, b(7, 4.6, 0.3, MAT.woodD), 0, 2.6, -D / 2 + 0.2);
     for (let i = 0; i < 7; i++) p(g, b(0.1, 4.2, 0.12, MAT.warm), -3 + i, 2.6, -D / 2 + 0.36);
-    p(g, b(4.2, 1.1, 1.0, MAT.woodL), 0, 0.55, -3.5);
-    p(g, b(4.4, 0.08, 1.1, MAT.marbleD), 0, 1.12, -3.5);
+    p(g, rb(4.2, 1.1, 1.0, MAT.woodL, 0.08), 0, 0.55, -3.5);
+    p(g, rb(4.4, 0.08, 1.1, MAT.marbleD, 0.05), 0, 1.12, -3.5);
     p(g, b(0.2, h, D, MAT.marbleD), W / 2, h / 2, 0);
     for (let i = -1; i <= 1; i++) {
-      p(g, b(0.12, 2.6, 1.5, MAT.brass), W / 2 - 0.1, 1.4, i * 3);
-      p(g, b(0.06, 0.2, 1.5, MAT.dark), W / 2 - 0.18, 2.7, i * 3);
+      p(g, rb(0.12, 2.6, 1.5, MAT.brass, 0.035), W / 2 - 0.1, 1.4, i * 3);
+      p(g, rb(0.06, 0.2, 1.5, MAT.dark, 0.025), W / 2 - 0.18, 2.7, i * 3);
       const c = new T.Mesh(new T.CircleGeometry(0.08, 24), MAT.warm); c.rotation.y = -Math.PI / 2; p(g, c, W / 2 - 0.22, 1.6, i * 3 + 0.85);
     }
     let s = fSofa(3.0); s.position.set(-5, 0, 3); s.rotation.y = 0; g.add(s);
@@ -335,16 +335,16 @@ export function makeKit(THREE) {
     p(g, b(W - 1, h - 0.6, 0.04, MAT.glassExt), 0, h / 2, -D / 2 + 0.1);
     for (let i = -1; i <= 1; i++) {
       const t = new T.Group();
-      p(t, b(0.8, 0.25, 1.8, MAT.dark), 0, 0.13, 0);
-      p(t, b(0.8, 1.2, 0.1, MAT.black), 0, 0.7, -0.8);
-      p(t, b(0.6, 0.5, 0.05, MAT.screen), 0, 1.1, -0.78);
+      p(t, rb(0.8, 0.25, 1.8, MAT.dark, 0.07), 0, 0.13, 0);
+      p(t, rb(0.8, 1.2, 0.1, MAT.black, 0.04), 0, 0.7, -0.8);
+      p(t, rb(0.6, 0.5, 0.05, MAT.screen, 0.03), 0, 1.1, -0.78);
       t.position.set(i * 1.4, 0, -3.5); g.add(t);
     }
-    p(g, b(2.6, 1.4, 0.4, MAT.steel), -4, 0.7, 2.5);
+    p(g, rb(2.6, 1.4, 0.4, MAT.steel, 0.08), -4, 0.7, 2.5);
     for (let i = 0; i < 4; i++) { const w = cy(0.18, 0.18, 0.5, MAT.dark, 32); w.rotation.z = Math.PI / 2; p(g, w, -5 + i * 0.7, 0.5, 2.7); }
-    p(g, b(0.5, 0.5, 1.8, MAT.black), 3, 0.45, 2);
-    p(g, b(1.8, 1.6, 0.3, MAT.steel), 5, 0.8, 3);
-    for (let i = 0; i < 3; i++) p(g, b(0.7, 0.04, 1.8, i % 2 ? MAT.sofa2 : MAT.gold), -5 + i * 0.9, 0.04, 5);
+    p(g, rb(0.5, 0.5, 1.8, MAT.black, 0.07), 3, 0.45, 2);
+    p(g, rb(1.8, 1.6, 0.3, MAT.steel, 0.07), 5, 0.8, 3);
+    for (let i = 0; i < 3; i++) p(g, rb(0.7, 0.04, 1.8, i % 2 ? MAT.sofa2 : MAT.gold, 0.03), -5 + i * 0.9, 0.04, 5);
     p(g, fPlant(1.4), 6, 0.08, -3);
     g.add(new T.AmbientLight(0xeef2fb, 0.32));
     g.add(new T.HemisphereLight(0xeef4ff, 0x30363e, 0.22));
@@ -372,7 +372,7 @@ export function makeKit(THREE) {
     p(g, b(w - 0.1, 0.92, 0.03, MAT.glass), bx, base + 0.78, sz + s * 1.75);
     p(g, b(w, 0.05, 0.06, MAT.mullion), bx, base + 1.26, sz + s * 1.75);
     // a single trough planter with soft greenery (kept subtle)
-    p(g, b(w - 1.0, 0.28, 0.45, MAT.bronze), bx, base + 0.42, zc + s * 0.55);
+    p(g, rb(w - 1.0, 0.28, 0.45, MAT.bronze, 0.06), bx, base + 0.42, zc + s * 0.55);
     p(g, sph(0.55, MAT.foliage), bx - 0.5, base + 0.82, zc + s * 0.55);
     p(g, sph(0.5, MAT.foliageD), bx + 0.5, base + 0.8, zc + s * 0.55);
   }
@@ -447,14 +447,14 @@ export function makeKit(THREE) {
     p(g, b(17, 0.9, 0.04, MAT.glass), 0, 0.5, 6);
     p(g, b(0.04, 0.9, 12, MAT.glass), 8.5, 0.5, 0);
     p(g, b(0.04, 0.9, 12, MAT.glass), -8.5, 0.5, 0);
-    p(g, b(5, 1.1, 1.0, MAT.woodD), -4, 0.55, -4);
-    p(g, b(5.2, 0.08, 1.1, MAT.marbleD), -4, 1.12, -4);
+    p(g, rb(5, 1.1, 1.0, MAT.woodD, 0.08), -4, 0.55, -4);
+    p(g, rb(5.2, 0.08, 1.1, MAT.marbleD, 0.05), -4, 1.12, -4);
     for (let i = -1; i <= 1; i++) p(g, cy(0.18, 0.2, 0.7, MAT.dark, 32), -5 + i * 1.4, 0.35, -3.0);
     let s = fSofa(3.0, MAT.sofa2); s.position.set(3, 0, 2); s.rotation.y = Math.PI; g.add(s);
     let s2 = fSofa(2.4); s2.position.set(5.5, 0, 0); s2.rotation.y = -Math.PI / 2; g.add(s2);
     p(g, cy(0.7, 0.7, 0.4, MAT.marbleD, 40), 4, 0.2, 0.5);
     p(g, cy(0.5, 0.5, 0.2, MAT.warm, 40), 4, 0.45, 0.5);
-    p(g, b(8, 0.15, 5, MAT.woodD), 3, 3.0, 1);
+    p(g, rb(8, 0.15, 5, MAT.woodD, 0.08), 3, 3.0, 1);
     for (let x = 0; x <= 6; x += 6) for (let z = -1; z <= 3; z += 4) p(g, b(0.16, 3, 0.16, MAT.woodD), x, 1.5, z);
     for (let i = 0; i < 5; i++) p(g, fPlant(1.4), -8 + i * 1.6, 0.1, 5.4);
     for (let i = 0; i < 14; i++) { const bh = 8 + Math.random() * 22, a = (i / 14) * Math.PI * 2; p(g, b(4 + Math.random() * 4, bh, 4, MAT.dark), Math.cos(a) * 70, bh / 2 - 6, Math.sin(a) * 60); }
@@ -469,7 +469,7 @@ export function makeKit(THREE) {
     const plaza = p(root, new T.Mesh(new T.CircleGeometry(34, 64), MAT.concreteD), 0, 0, 0); plaza.rotation.x = -Math.PI / 2; plaza.receiveShadow = true;
     p(root, b(30, 2.4, 22, MAT.concreteD), 0, -1.2, 0, true);
     p(root, b(31, 0.3, 23, MAT.concrete), 0, 0.05, 0);
-    p(root, b(11, 0.3, 5, MAT.dark), 0, 3.0, 12.4, true);
+    p(root, rb(11, 0.3, 5, MAT.dark, 0.1), 0, 3.0, 12.4, true);
     for (let x = -4; x <= 4; x += 4) p(root, cy(0.18, 0.18, 3, MAT.steel), x, 1.5, 11.2);
     [[-18, 16, MAT.car3], [-12, 18, MAT.car1]].forEach(([x, z, c]) => { const car = fCar(c); car.position.set(x, 0, z); car.rotation.y = 0.4; root.add(car); });
     for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; p(root, fPlant(1.6), Math.cos(a) * 30, 0.05, Math.sin(a) * 22).scale.setScalar(1.3); }
@@ -477,12 +477,12 @@ export function makeKit(THREE) {
     p(root, fPlant(2.4), -24, 0.05, 6).scale.setScalar(1.6);
     // pool deck
     const pool = new T.Group();
-    p(pool, b(20, 0.3, 16, MAT.marble), 0, 0.16, 0);
-    p(pool, b(11, 0.4, 5.5, MAT.water), 0, 0.3, 0);
-    p(pool, b(11.4, 0.05, 5.9, MAT.tile), 0, 0.06, 0);
-    for (let i = -1; i <= 1; i++) { const ln = new T.Group(); p(ln, b(0.7, 0.2, 2.0, MAT.white), 0, 0.32, 0); p(ln, b(0.7, 0.5, 0.7, MAT.white), 0, 0.5, -0.8); ln.position.set(-4 + i * 1.4, 0, 4.6); pool.add(ln); }
-    p(pool, b(4, 2.4, 3, MAT.woodL), 6.5, 1.2, -4);
-    p(pool, b(4.4, 0.2, 3.4, MAT.woodD), 6.5, 2.4, -4);
+    p(pool, rb(20, 0.3, 16, MAT.marble, 0.1), 0, 0.16, 0);
+    p(pool, rb(11, 0.4, 5.5, MAT.water, 0.16), 0, 0.3, 0);
+    p(pool, rb(11.4, 0.05, 5.9, MAT.tile, 0.08), 0, 0.06, 0);
+    for (let i = -1; i <= 1; i++) { const ln = new T.Group(); p(ln, rb(0.7, 0.2, 2.0, MAT.white, 0.08), 0, 0.32, 0); p(ln, rb(0.7, 0.5, 0.7, MAT.white, 0.08), 0, 0.5, -0.8); ln.position.set(-4 + i * 1.4, 0, 4.6); pool.add(ln); }
+    p(pool, rb(4, 2.4, 3, MAT.woodL, 0.08), 6.5, 1.2, -4);
+    p(pool, rb(4.4, 0.2, 3.4, MAT.woodD, 0.08), 6.5, 2.4, -4);
     for (let i = 0; i < 6; i++) p(pool, fPlant(1.2), -9 + i * 3.6, 0.16, 7.4);
     pool.position.set(26, 0, 4); root.add(pool);
     // tower
@@ -493,7 +493,7 @@ export function makeKit(THREE) {
     p(shaft, b(2.6, totalH + 0.6, 3.0, MAT.glassExt), 0, totalH / 2, 0);
     for (let y = 0; y <= 8; y++) p(shaft, b(2.7, 0.18, 3.1, MAT.dark), 0, y * FH, 0);
     for (let i = 0; i < 4; i++) p(shaft, b(0.12, totalH, 0.12, MAT.dark), (i < 2 ? -1 : 1) * 1.3, totalH / 2, (i % 2 ? -1 : 1) * 1.5);
-    const cab = b(2.0, 2.6, 2.2, MAT.gold); p(shaft, cab, 0, 1.6, 0);
+    const cab = rb(2.0, 2.6, 2.2, MAT.gold, 0.08); p(shaft, cab, 0, 1.6, 0);
     const cabL = new T.PointLight(0xffe6b0, 0.8, 8, 2); cab.add(cabL);
     shaft.position.set(-13.5, 0, 0); tower.add(shaft);
     // sky lounge crown
