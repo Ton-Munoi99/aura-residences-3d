@@ -358,80 +358,57 @@ export function makeKit(THREE) {
     p(g, b(w - 0.6, 0.9, 0.04, MAT.glass), x, y + 0.5, z + s * 2.0);
   }
 
-  // one InstancedMesh for many vertical timber battens — a single draw call.
-  function makeLouvers(specs) {
-    if (!specs.length) return new T.Group();
-    const geo = new T.BoxGeometry(0.05, 1, 0.1);
-    const im = new T.InstancedMesh(geo, MAT.timber, specs.length);
-    const o = new T.Object3D();
-    specs.forEach(([x, y, z, h, rot], i) => {
-      o.position.set(x, y, z);
-      o.rotation.set(0, rot ? Math.PI / 2 : 0, 0);
-      o.scale.set(1, h, 1);
-      o.updateMatrix();
-      im.setMatrixAt(i, o.matrix);
-    });
-    im.instanceMatrix.needsUpdate = true;
-    im.castShadow = true;
-    return im;
-  }
-
-  // a projecting framed balcony box with frameless glass rail + cascading greenery
+  // a clean projecting balcony with a frameless glass rail + one tidy planter
   function balconyBox(g, bx, base, sz) {
-    const s = Math.sign(sz), zc = sz + s * 0.9, w = 3.0;
-    p(g, b(w, 0.12, 1.7, MAT.concrete), bx, base + 0.3, zc, true).receiveShadow = true;
-    [-w / 2, w / 2].forEach((dx) => p(g, b(0.08, 1.0, 0.08, MAT.timberD), bx + dx, base + 0.8, sz + s * 1.75));
-    p(g, b(w, 0.08, 0.08, MAT.timberD), bx, base + 1.25, sz + s * 1.75);
-    p(g, b(w - 0.2, 0.85, 0.04, MAT.glass), bx, base + 0.78, sz + s * 1.75);
-    // planter box + lush cascading greenery
-    p(g, b(w - 0.4, 0.34, 0.55, MAT.bronze), bx, base + 0.45, zc + s * 0.55);
-    p(g, new T.Mesh(new T.SphereGeometry(0.6, 8, 8), MAT.foliage), bx - 0.6, base + 0.9, zc + s * 0.55);
-    p(g, new T.Mesh(new T.SphereGeometry(0.66, 8, 8), MAT.foliageD), bx + 0.45, base + 0.95, zc + s * 0.55);
-    p(g, b(w - 0.7, 0.8, 0.2, MAT.foliageD), bx, base + 0.12, zc + s * 0.65); // vines spilling down
+    const s = Math.sign(sz), zc = sz + s * 0.9, w = 3.4;
+    p(g, b(w, 0.1, 1.7, MAT.concrete), bx, base + 0.28, zc, true).receiveShadow = true;
+    // frameless glass balustrade + slim champagne handrail
+    p(g, b(w - 0.1, 0.92, 0.03, MAT.glass), bx, base + 0.78, sz + s * 1.75);
+    p(g, b(w, 0.05, 0.06, MAT.mullion), bx, base + 1.26, sz + s * 1.75);
+    // a single trough planter with soft greenery (kept subtle)
+    p(g, b(w - 1.0, 0.28, 0.45, MAT.bronze), bx, base + 0.42, zc + s * 0.55);
+    p(g, new T.Mesh(new T.SphereGeometry(0.55, 10, 10), MAT.foliage), bx - 0.5, base + 0.82, zc + s * 0.55);
+    p(g, new T.Mesh(new T.SphereGeometry(0.5, 10, 10), MAT.foliageD), bx + 0.5, base + 0.8, zc + s * 0.55);
   }
 
   function buildTower(building) {
-    // warm bronze spandrel (highlightable → turns gold when a floor is selected)
-    const bandBase = () => new T.MeshStandardMaterial({ color: 0x2a2622, roughness: 0.45, metalness: 0.5, emissive: 0x000000, emissiveIntensity: 0, envMapIntensity: 0.8 });
-    // recessed warm dark glass behind the louvers
-    const mkGlass = () => new T.MeshStandardMaterial({ color: 0x241f1a, roughness: 0.18, metalness: 0.3, transparent: true, opacity: 0.72, emissive: 0x000000, emissiveIntensity: 0, envMapIntensity: 0.7 });
+    // light spandrel band (highlightable → turns gold when a floor is selected)
+    const bandBase = () => new T.MeshStandardMaterial({ color: 0xcbc5b8, roughness: 0.65, metalness: 0.1, emissive: 0x000000, emissiveIntensity: 0, envMapIntensity: 0.6 });
+    // clean reflective curtain-wall glass (reads as glass, shows the sky)
+    const mkGlass = () => new T.MeshStandardMaterial({ color: 0x3a5568, roughness: 0.07, metalness: 0.6, transparent: true, opacity: 0.5, emissive: 0x000000, emissiveIntensity: 0, envMapIntensity: 1.5 });
     const floorsGfx = {}, pickBoxes = [];
-    const frontLouv = [], otherLouv = []; // [x,y,z,h(,rot)] batten specs
 
     const buildFloor = (f) => {
       const isPH = f === 8, base = (f - 1) * FH, g = new T.Group(); building.add(g);
       const hx = isPH ? 8 : 12, hz = isPH ? 5.5 : 8;
 
-      // 1) slim warm floor-slab edge
-      p(g, b(hx * 2 + 0.7, 0.22, hz * 2 + 0.7, MAT.concrete), 0, base + 0.11, 0, true).receiveShadow = true;
-      // 2) spandrel highlight band
+      // 1) slim light floor-slab edge — clean horizontal line
+      p(g, b(hx * 2 + 0.6, 0.18, hz * 2 + 0.6, MAT.concrete), 0, base + 0.09, 0, true).receiveShadow = true;
+      // 2) subtle spandrel highlight band
       const bMat = bandBase();
-      p(g, b(hx * 2 + 0.72, 0.34, hz * 2 + 0.72, bMat), 0, base + 0.33, 0, true);
+      p(g, b(hx * 2 + 0.62, 0.3, hz * 2 + 0.62, bMat), 0, base + 0.3, 0, true);
 
-      // 3) recessed warm glass (thin — kept for night-glow + opacity control)
-      const gh = FH - 0.6, gy = base + 0.5 + gh / 2, gMat = mkGlass(), glassPanels = {};
-      const front = p(g, b(hx * 2 - 0.3, gh, 0.1, gMat), 0, gy, hz - 0.18); glassPanels.front = front;
-      p(g, b(hx * 2 - 0.3, gh, 0.1, gMat), 0, gy, -hz + 0.18);
-      p(g, b(0.1, gh, hz * 2 - 0.3, gMat), -hx + 0.18, gy, 0);
-      p(g, b(0.1, gh, hz * 2 - 0.3, gMat), hx - 0.18, gy, 0);
+      // 3) floor-to-ceiling glass — large clean panes (no busy bars)
+      const gh = FH - 0.55, gy = base + 0.45 + gh / 2, gMat = mkGlass(), glassPanels = {};
+      const front = p(g, b(hx * 2 - 0.1, gh, 0.08, gMat), 0, gy, hz); glassPanels.front = front;
+      p(g, b(hx * 2 - 0.1, gh, 0.08, gMat), 0, gy, -hz);
+      p(g, b(0.08, gh, hz * 2 - 0.1, gMat), -hx, gy, 0);
+      p(g, b(0.08, gh, hz * 2 - 0.1, gMat), hx, gy, 0);
 
-      // 4) collect vertical timber louvers (front toggles with cutaway; rest stay)
-      if (!isPH) {
-        const lh = gh + 0.4, ly = gy;
-        for (let x = -hx + 0.3; x <= hx - 0.3; x += 0.5) { frontLouv.push([x, ly, hz + 0.02, lh]); otherLouv.push([x, ly, -hz - 0.02, lh]); }
-        for (let z = -hz + 0.4; z <= hz - 0.4; z += 0.5) { otherLouv.push([-hx - 0.02, ly, z, lh, true]); otherLouv.push([hx + 0.02, ly, z, lh, true]); }
+      // 4) a few slim champagne frames at unit divisions + corner columns (rhythm, not bars)
+      for (let x = -hx + 6; x <= hx - 6 + 0.01; x += 6) {
+        p(g, b(0.1, gh, 0.1, MAT.mullion), x, gy, hz + 0.02);
+        p(g, b(0.1, gh, 0.1, MAT.mullion), x, gy, -hz - 0.02);
       }
+      [[-hx, hz], [hx, hz], [-hx, -hz], [hx, -hz]].forEach(([mx, mz]) => p(g, b(0.18, FH, 0.18, MAT.mullion), mx, base + FH / 2, mz, true));
 
-      // 5) corner bronze-timber columns
-      [[-hx, hz], [hx, hz], [-hx, -hz], [hx, -hz]].forEach(([mx, mz]) => p(g, b(0.18, FH, 0.18, MAT.timberD), mx, base + FH / 2, mz, true));
-
-      // 6) staggered projecting balcony boxes with greenery (offset per floor)
+      // 5) staggered framed balconies with tidy greenery (offset per floor)
       if (!isPH) {
         const xs = f % 2 ? [-9, -3, 3, 9] : [-6, 0, 6];
         xs.forEach((bx, i) => balconyBox(g, bx, base, (i + (f % 2)) % 2 ? -hz : hz));
       }
 
-      // 7) interior status plates (drive hotspot colour + cutaway dollhouse)
+      // 6) interior status plates (drive hotspot colour + cutaway dollhouse)
       const plates = {};
       UNITS.filter((u) => u.floor === f).forEach((u) => {
         const pMat = new T.MeshStandardMaterial({ color: new T.Color(statusColor(u.status)), roughness: 0.5, metalness: 0.2, emissive: new T.Color(0xff9d40), emissiveIntensity: 0 });
@@ -439,14 +416,14 @@ export function makeKit(THREE) {
         plates[u.id] = { mesh: pl, mat: pMat, worldY: base + 0.9, u };
       });
 
-      // 8) penthouse roof-garden setback
+      // 7) penthouse setback — clean glass balustrade + roof garden
       if (isPH) {
         [[24.4, 0.08, 0, 8.3], [24.4, 0.08, 0, -8.3], [0.08, 16.4, 12.2, 0], [0.08, 16.4, -12.2, 0]].forEach(([w, d, x, z]) => {
           p(g, b(w * 0.99, 0.9, d * 0.99, MAT.glass), x, base + 0.6, z);
-          p(g, b(w, 0.06, d, MAT.timberD), x, base + 1.05, z);
+          p(g, b(w, 0.06, d, MAT.mullion), x, base + 1.05, z);
         });
         p(g, b(17, 0.3, 12, MAT.concrete), 0, base + FH + 0.05, 0, true).receiveShadow = true;
-        for (let x = -7; x <= 7; x += 2) { p(g, b(1.3, 0.5, 1.0, MAT.bronze), x, base + 0.5, 5.2); p(g, new T.Mesh(new T.SphereGeometry(0.85, 8, 8), MAT.foliage), x, base + 1.25, 5.2); }
+        for (let x = -7; x <= 7; x += 2.3) { p(g, b(1.4, 0.45, 1.0, MAT.bronze), x, base + 0.48, 5.2); p(g, new T.Mesh(new T.SphereGeometry(0.8, 10, 10), MAT.foliage), x, base + 1.2, 5.2); }
       }
 
       const pb = p(g, new T.Mesh(new T.BoxGeometry(hx * 2 + 1.2, FH, hz * 2 + 1.2), new T.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })), 0, base + FH / 2, 0);
@@ -454,11 +431,7 @@ export function makeKit(THREE) {
       floorsGfx[f] = { group: g, glassMat: gMat, bandMat: bMat, glassPanels, plates, base, isPH };
     };
     for (let f = 1; f <= 8; f++) buildFloor(f);
-
-    const louverFront = makeLouvers(frontLouv);
-    building.add(louverFront);
-    building.add(makeLouvers(otherLouv));
-    return { floorsGfx, pickBoxes, louverFront };
+    return { floorsGfx, pickBoxes };
   }
 
   function buildSky() {
@@ -508,7 +481,7 @@ export function makeKit(THREE) {
     pool.position.set(26, 0, 4); root.add(pool);
     // tower
     const tower = new T.Group(); root.add(tower);
-    const { floorsGfx, pickBoxes, louverFront } = buildTower(tower);
+    const { floorsGfx, pickBoxes } = buildTower(tower);
     // glass elevator + cab
     const shaft = new T.Group(); const totalH = 8 * FH;
     p(shaft, b(2.6, totalH + 0.6, 3.0, MAT.glassExt), 0, totalH / 2, 0);
@@ -519,7 +492,7 @@ export function makeKit(THREE) {
     shaft.position.set(-13.5, 0, 0); tower.add(shaft);
     // sky lounge crown
     const sky = buildSky(); sky.position.set(0, totalH + 0.1, 0); root.add(sky);
-    return { root, floorsGfx, pickBoxes, cab, totalH, louverFront };
+    return { root, floorsGfx, pickBoxes, cab, totalH };
   }
 
   return { MAT, buildExterior, buildInterior, buildParking, buildLobby, buildGym };
