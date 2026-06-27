@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;background:#070a10;overflow:hidden}
+  @keyframes auraspin{to{transform:rotate(360deg)}}
+  @keyframes auraping{0%{transform:scale(.6);opacity:.9}70%{transform:scale(2.4);opacity:0}100%{opacity:0}}
+  @keyframes aurafade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  ::-webkit-scrollbar{width:7px}
+  ::-webkit-scrollbar-thumb{background:#2a3038;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .aura-hot{pointer-events:auto;cursor:pointer}
+</style>
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</helmet>
+<div style="position:fixed;inset:0;background:#070a10;font-family:'Manrope',system-ui,sans-serif;color:#e9e4d9;overflow:hidden;user-select:none">
+
+  <div ref="{{ setSky }}" style="position:absolute;inset:0;background:radial-gradient(circle at 50% 18%,#15202e,#070a10 72%);transition:background .9s ease"></div>
+  <div ref="{{ setGl }}" style="position:absolute;inset:0"></div>
+  <div ref="{{ setOverlay }}" style="position:absolute;inset:0;pointer-events:none;z-index:3"></div>
+
+  <div ref="{{ setLoad }}" style="position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#070a10;gap:18px">
+    <div style="width:34px;height:34px;border:2px solid #2a3038;border-top-color:#c9a24b;border-radius:50%;animation:auraspin 1s linear infinite"></div>
+    <div style="font-family:'Cormorant Garamond',serif;letter-spacing:.5em;font-size:15px;color:#9a948a;padding-left:.5em">AURA</div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div style="position:absolute;top:0;left:0;right:0;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:linear-gradient(180deg,rgba(7,10,16,.94),rgba(7,10,16,0));z-index:8">
+    <div style="display:flex;align-items:baseline;gap:13px">
+      <div style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:28px;letter-spacing:.4em;padding-left:.4em;color:#f3ecdd">AURA</div>
+      <div style="font-size:9.5px;letter-spacing:.44em;color:#8d8b85;font-weight:500;padding-left:.44em">RESIDENCES</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="display:flex;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:30px;padding:4px">
+        <div onClick="{{ todDay }}" style="{{ dayStyle }}">Day</div>
+        <div onClick="{{ todDusk }}" style="{{ duskStyle }}">Dusk</div>
+        <div onClick="{{ todNight }}" style="{{ nightStyle }}">Night</div>
+      </div>
+      <div onClick="{{ toggleCutaway }}" style="{{ cutStyle }}"><span style="font-size:13px;line-height:1">▦</span><span>Cutaway</span></div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div style="position:absolute;top:64px;left:0;bottom:0;width:300px;z-index:7;background:linear-gradient(90deg,rgba(9,12,18,.95),rgba(9,12,18,.6));backdrop-filter:blur(8px);border-right:1px solid rgba(255,255,255,.05);display:flex;flex-direction:column">
+    <div style="display:flex;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="flex:1;padding:14px 0;text-align:center;border-right:1px solid rgba(255,255,255,.05)">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:23px;color:#f3ecdd;line-height:1">8</div>
+        <div style="font-size:8px;letter-spacing:.2em;color:#7d7a73;margin-top:5px">FLOORS</div></div>
+      <div style="flex:1;padding:14px 0;text-align:center;border-right:1px solid rgba(255,255,255,.05)">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:23px;color:#f3ecdd;line-height:1">50</div>
+        <div style="font-size:8px;letter-spacing:.2em;color:#7d7a73;margin-top:5px">UNITS</div></div>
+      <div style="flex:1;padding:14px 0;text-align:center">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:23px;color:#c9a24b;line-height:1">{{ stats.available }}</div>
+        <div style="font-size:8px;letter-spacing:.2em;color:#7d7a73;margin-top:5px">AVAILABLE</div></div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:4px 12px 24px">
+      <div style="padding:14px 6px 8px;font-size:9px;letter-spacing:.26em;color:#7d7a73">EXPLORE</div>
+      <sc-for list="{{ exploreList }}" as="e" hint-placeholder-count="6">
+        <div onClick="{{ e.onSelect }}" style="{{ e.rowStyle }}">
+          <div style="width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;background:{{ e.iconBg }};color:{{ e.iconColor }};flex-shrink:0">{{ e.glyph }}</div>
+          <div style="flex:1">
+            <div style="font-size:12.5px;font-weight:600;color:{{ e.titleColor }}">{{ e.title }}</div>
+            <div style="font-size:9.5px;color:#7d7a73;margin-top:1px">{{ e.sub }}</div>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="padding:16px 6px 8px;font-size:9px;letter-spacing:.26em;color:#7d7a73;border-top:1px solid rgba(255,255,255,.05);margin-top:10px">RESIDENCES</div>
+      <sc-for list="{{ floorsList }}" as="f" hint-placeholder-count="8">
+        <div onClick="{{ f.onSelect }}" style="{{ f.rowStyle }}">
+          <div style="display:flex;align-items:center;gap:11px">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;width:30px;color:{{ f.numColor }}">{{ f.num }}</div>
+            <div><div style="font-size:12.5px;font-weight:600;color:{{ f.titleColor }}">{{ f.title }}</div>
+            <div style="font-size:9.5px;color:#7d7a73;margin-top:2px">{{ f.sub }}</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="width:7px;height:7px;border-radius:50%;background:#c9a24b;box-shadow:0 0 7px #c9a24b88"></div>
+            <div style="font-size:11px;color:#b9b2a4;font-weight:600;min-width:14px;text-align:right">{{ f.avail }}</div>
+          </div>
+        </div>
+        <sc-if value="{{ f.expanded }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:2px 4px 12px 6px;display:flex;flex-direction:column;gap:4px">
+            <sc-for list="{{ f.units }}" as="u" hint-placeholder-count="7">
+              <div onClick="{{ u.onSelect }}" style="{{ u.rowStyle }}">
+                <div style="width:8px;height:8px;border-radius:2px;background:{{ u.statusColor }};flex-shrink:0"></div>
+                <div style="font-weight:600;font-size:11.5px;letter-spacing:.05em;color:{{ u.labelColor }};min-width:30px">{{ u.label }}</div>
+                <div style="font-size:10px;color:#857f76;flex:1">{{ u.type }} · {{ u.sqm }}㎡</div>
+                <div style="font-size:11px;color:#b9b2a4;font-weight:600">{{ u.priceStr }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- BOTTOM: UNIT PANEL (exterior, unit selected) -->
+  <sc-if value="{{ showUnitPanel }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;left:300px;right:0;bottom:0;z-index:6;padding:20px 30px;background:linear-gradient(0deg,rgba(7,10,16,.97),rgba(7,10,16,0));display:flex;align-items:flex-end;justify-content:space-between;gap:26px;animation:aurafade .4s ease">
+      <div style="display:flex;align-items:flex-end;gap:30px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:10px;letter-spacing:.24em;color:#7d7a73;margin-bottom:6px">{{ sel.floorLabel }}</div>
+          <div style="display:flex;align-items:baseline;gap:13px">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:40px;line-height:.9;color:#f3ecdd">{{ sel.label }}</div>
+            <div style="display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:30px;background:{{ sel.statusBg }};border:1px solid {{ sel.statusBorder }}">
+              <div style="width:6px;height:6px;border-radius:50%;background:{{ sel.statusColor }}"></div>
+              <span style="font-size:9.5px;letter-spacing:.16em;color:{{ sel.statusColor }};font-weight:600">{{ sel.statusLabel }}</span>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#9a948a;margin-top:8px">{{ sel.type }}</div>
+        </div>
+        <div style="display:flex;gap:26px;padding-bottom:3px">
+          <div><div style="font-size:9px;letter-spacing:.2em;color:#7d7a73">BEDS</div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:#e9e4d9;margin-top:4px">{{ sel.beds }}</div></div>
+          <div><div style="font-size:9px;letter-spacing:.2em;color:#7d7a73">BATHS</div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:#e9e4d9;margin-top:4px">{{ sel.baths }}</div></div>
+          <div><div style="font-size:9px;letter-spacing:.2em;color:#7d7a73">AREA</div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:#e9e4d9;margin-top:4px">{{ sel.sqm }}<span style="font-size:12px;color:#857f76"> ㎡</span></div></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:26px">
+        <div style="text-align:right;padding-bottom:2px">
+          <div style="font-size:9px;letter-spacing:.2em;color:#7d7a73;margin-bottom:5px">STARTING FROM</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:34px;color:#c9a24b;line-height:.9">{{ sel.priceStr }}</div>
+        </div>
+        <div onClick="{{ enterUnit }}" style="display:flex;align-items:center;gap:9px;cursor:pointer;padding:13px 22px;border-radius:5px;background:#c9a24b;color:#0a0d12;font-weight:700;font-size:12px;letter-spacing:.06em;white-space:nowrap;box-shadow:0 8px 24px rgba(201,162,75,.3)">ENTER RESIDENCE<span style="font-size:14px">↗</span></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- BOTTOM: INTERIOR ROOM BAR -->
+  <sc-if value="{{ showInteriorBar }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:300px;right:0;bottom:0;z-index:6;padding:18px 30px 22px;background:linear-gradient(0deg,rgba(7,10,16,.97),rgba(7,10,16,0));animation:aurafade .4s ease">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:20px">
+        <div>
+          <div style="font-size:10px;letter-spacing:.22em;color:#7d7a73;margin-bottom:5px">{{ intSub }}</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:26px;color:#f3ecdd">{{ intTitle }}</div>
+        </div>
+        <div onClick="{{ back }}" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:11px 18px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#cfc8bb;font-weight:600;font-size:11.5px"><span>←</span>Back to Building</div>
+      </div>
+      <div style="display:flex;gap:9px;margin-top:15px;flex-wrap:wrap">
+        <sc-for list="{{ roomChips }}" as="c" hint-placeholder-count="5">
+          <div onClick="{{ c.onSelect }}" style="{{ c.style }}">{{ c.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- BOTTOM: AMENITY BAR -->
+  <sc-if value="{{ showAmenityBar }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:300px;right:0;bottom:0;z-index:6;padding:20px 30px;background:linear-gradient(0deg,rgba(7,10,16,.97),rgba(7,10,16,0));display:flex;align-items:flex-end;justify-content:space-between;animation:aurafade .4s ease">
+      <div>
+        <div style="font-size:10px;letter-spacing:.24em;color:#7d7a73;margin-bottom:6px">AURA · AMENITIES</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:34px;color:#f3ecdd;line-height:.95">{{ amTitle }}</div>
+        <div style="font-size:12px;color:#9a948a;margin-top:8px;max-width:520px">{{ amDesc }}</div>
+      </div>
+      <div onClick="{{ back }}" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:12px 20px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#cfc8bb;font-weight:600;font-size:11.5px"><span>←</span>Back to Building</div>
+    </div>
+  </sc-if>
+
+  <div style="position:absolute;bottom:12px;left:312px;z-index:4;font-size:9.5px;letter-spacing:.12em;color:#5a574f;pointer-events:none">DRAG TO ORBIT · SCROLL TO ZOOM · 360°</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { floor:8, unit:'PH', tod:'dusk', cutaway:false, view:'exterior', room:'overview' };
+  FH=3.2;
+
+  // ============ DATA ============
+  statusFor(idx){ const r=Math.abs((Math.sin(idx*12.9898)*43758.5453)%1); return r<0.42?'available':(r<0.68?'reserved':'sold'); }
+  buildUnits(){
+    const fmt=v=>'฿'+(v/1e6).toFixed(2)+'M', out=[];
+    for(let f=1;f<=7;f++){
+      const cells=[{cx:-9,zc:4.5,w:6,d:7,t:'1BR'},{cx:-3,zc:4.5,w:6,d:7,t:'1BR'},{cx:3,zc:4.5,w:6,d:7,t:'1BR'},{cx:9,zc:4.5,w:6,d:7,t:'1BR'},{cx:-8,zc:-4.5,w:8,d:7,t:'2BR'},{cx:0,zc:-4.5,w:8,d:7,t:'2BR'},{cx:8,zc:-4.5,w:8,d:7,t:'2BR'}];
+      cells.forEach((c,i)=>{const n=i+1,id=`${f}${String(n).padStart(2,'0')}`,idx=f*7+i,corner=Math.abs(c.cx)>6;let price,sqm,beds,baths;
+        if(c.t==='1BR'){price=4200000+(f-1)*180000+(corner?250000:0);sqm=56+(i%2?2:0);beds=1;baths=1;}else{price=7400000+(f-1)*300000+(corner?450000:0);sqm=89+(i%2?4:0);beds=2;baths=2;}
+        out.push({id,floor:f,n,label:id,type:c.t,kind:c.t,beds,baths,sqm,price,priceStr:fmt(price),status:this.statusFor(idx),cell:c});});
+    }
+    out.push({id:'PH',floor:8,n:1,label:'PH',type:'Penthouse',kind:'PH',beds:3,baths:3,sqm:240,price:42000000,priceStr:fmt(42000000),status:'available',cell:{cx:0,zc:0,w:16,d:11,t:'PH'}});
+    return out;
+  }
+  units(){ if(!this._u) this._u=this.buildUnits(); return this._u; }
+  unitById(id){ return this.units().find(u=>u.id===id)||null; }
+  statusColor(s){ return s==='available'?'#c9a24b':s==='reserved'?'#8a6f3e':'#3a3f47'; }
+
+  TOD={
+    day:{sky:'linear-gradient(180deg,#dfe4ea,#aeb7c0)',fog:0xc3cbd2,fogD:0.0045,hemiSky:0xeef3f8,hemiGnd:0x6b7178,hemiI:1.0,dirC:0xfff3e0,dirI:1.3,dirPos:[42,62,34],gEmis:0x000000,gEmisI:0,plateI:0},
+    dusk:{sky:'linear-gradient(180deg,#36283a,#6e4b3a 58%,#caa069)',fog:0x33282f,fogD:0.0075,hemiSky:0xffb27a,hemiGnd:0x2a2430,hemiI:0.55,dirC:0xff8a4d,dirI:1.1,dirPos:[-52,26,30],gEmis:0x3a2410,gEmisI:0.55,plateI:0.18},
+    night:{sky:'radial-gradient(circle at 50% 16%,#16212f,#06090f 70%)',fog:0x080c12,fogD:0.011,hemiSky:0x29344f,hemiGnd:0x05070a,hemiI:0.32,dirC:0x6f8bd0,dirI:0.35,dirPos:[-42,44,22],gEmis:0x281706,gEmisI:1.0,plateI:0.7}
+  };
+
+  // ============ LIFECYCLE ============
+  componentDidMount(){ this._wait(); }
+  componentDidUpdate(){ if(!this.three) return; this._applyTod(); if(this.state.view==='exterior'){this._applySelection();this._applyCutaway();this._buildHotspots();} else {this._clearHotspots();} this._syncView(); }
+  componentWillUnmount(){ cancelAnimationFrame(this._raf); window.removeEventListener('resize',this._onResize); }
+  _wait(){ if(window.THREE&&THREE.OrbitControls) this.initThree(); else this._t=setTimeout(()=>this._wait(),60); }
+
+  // ============ MATERIALS ============
+  _mats(){ const T=THREE, M=(c,r,m,o)=>new T.MeshStandardMaterial({color:c,roughness:r==null?0.8:r,metalness:m||0,transparent:o!=null,opacity:o==null?1:o});
+    return {
+      wall:M(0xd9cfbd,0.92), wall2:M(0xcabfac,0.9), ceil:M(0xe2dbcb,0.95),
+      wood:M(0x9c6c40,0.55), woodL:M(0xc89a68,0.5), woodD:M(0x5e3f28,0.5),
+      marble:M(0xe7e3da,0.25,0.15), marbleD:M(0x2a2d33,0.3,0.2), stone:M(0x6f6a60,0.7),
+      sofa:M(0xb7af9f,0.85), sofa2:M(0x6f6a62,0.85), fabric:M(0x8a8276,0.85),
+      metal:M(0xb8924e,0.35,0.85), steel:M(0x9aa0a6,0.4,0.7), dark:M(0x23262c,0.5,0.5),
+      glass:M(0x9fc3d6,0.05,0.1,0.16), glassExt:M(0x1a2230,0.12,0.2,0.5),
+      white:M(0xf3f1ea,0.5), black:M(0x1c1d20,0.6), screen:new T.MeshStandardMaterial({color:0x0a0c10,emissive:0x14304a,emissiveIntensity:0.8,roughness:0.2}),
+      water:M(0x2f7e92,0.1,0.2,0.82), grass:M(0x2f5d3a,0.9), plant:M(0x356b42,0.85), pot:M(0x3a3530,0.7),
+      warm:new T.MeshStandardMaterial({color:0xfff0d2,emissive:0xffca6e,emissiveIntensity:1.1,roughness:0.4}),
+      rug:M(0xb6a78f,0.95), rugD:M(0x7d6f5c,0.95), tile:M(0xeae6dd,0.4,0.05),
+      car1:M(0x2a2e35,0.4,0.6), car2:M(0x6b1f24,0.4,0.6), car3:M(0xc9c4ba,0.4,0.6), carGlass:M(0x10151c,0.2,0.4,0.7),
+      gold:M(0xc9a24b,0.4,0.7), road:M(0x14171c,0.85), brass:M(0xcaa15a,0.3,0.9)
+    };
+  }
+
+  // ============ SMALL HELPERS ============
+  _b(w,h,d,mat){ return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat); }
+  _cy(r1,r2,h,mat,seg){ return new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg||16),mat); }
+  _p(g,m,x,y,z,sh){ m.position.set(x,y,z); if(sh){m.castShadow=true;} g.add(m); return m; }
+
+  // ============ FURNITURE ============
+  fSofa(w,M,col){ const g=new THREE.Group(),mat=col||M.sofa; this._p(g,this._b(w,0.4,1.0,mat),0,0.35,0); this._p(g,this._b(w,0.55,0.22,mat),0,0.62,-0.39); this._p(g,this._b(0.22,0.45,1.0,mat),-w/2+0.11,0.55,0); this._p(g,this._b(0.22,0.45,1.0,mat),w/2-0.11,0.55,0);
+    const n=Math.max(2,Math.round(w/0.9)); for(let i=0;i<n;i++){const c=this._b(w/n-0.06,0.16,0.85,M.fabric);this._p(g,c,-w/2+w/n*(i+0.5),0.6,0.02);} 
+    [-w/2+0.18,w/2-0.18].forEach(x=>[-0.42,0.42].forEach(z=>this._p(g,this._b(0.08,0.18,0.08,M.woodD),x,0.09,z))); return g; }
+  fTable(w,d,h,M,top){ const g=new THREE.Group(); this._p(g,this._b(w,0.08,d,top||M.wood),0,h,0); [[-w/2+0.1,-d/2+0.1],[w/2-0.1,-d/2+0.1],[-w/2+0.1,d/2-0.1],[w/2-0.1,d/2-0.1]].forEach(([x,z])=>this._p(g,this._b(0.08,h,0.08,M.woodD),x,h/2,z)); return g; }
+  fChair(M){ const g=new THREE.Group(); this._p(g,this._b(0.46,0.06,0.46,M.woodL),0,0.46,0); this._p(g,this._b(0.46,0.5,0.06,M.woodL),0,0.72,-0.2); [[-0.2,-0.2],[0.2,-0.2],[-0.2,0.2],[0.2,0.2]].forEach(([x,z])=>this._p(g,this._b(0.05,0.46,0.05,M.woodD),x,0.23,z)); return g; }
+  fDining(seats,M){ const g=new THREE.Group(),w=seats>=6?2.6:1.4,d=0.95; g.add(this.fTable(w,d,0.74,M)); const per=Math.ceil(seats/2);
+    for(let i=0;i<per;i++){const x=-w/2+w/per*(i+0.5);let c=this.fChair(M);c.position.set(x,0,d/2+0.32);c.rotation.y=Math.PI;g.add(c);if(i*2+1<seats){let c2=this.fChair(M);c2.position.set(x,0,-d/2-0.32);g.add(c2);}} return g; }
+  fBed(w,M){ const g=new THREE.Group(); this._p(g,this._b(w,0.3,2.1,M.woodD),0,0.2,0); this._p(g,this._b(w-0.1,0.22,2.0,M.white),0,0.42,0.02); this._p(g,this._b(w-0.1,0.12,1.3,M.fabric),0,0.55,0.35);
+    this._p(g,this._b(w,0.8,0.12,M.fabric),0,0.55,-1.0); [-w/2+0.35,w/2-0.35].forEach(x=>this._p(g,this._b(0.5,0.18,0.32,M.white),x,0.52,-0.78));
+    [-w/2-0.32,w/2+0.32].forEach(x=>{this._p(g,this._b(0.5,0.42,0.42,M.woodL),x,0.21,-0.7);this._p(g,this.fLamp(M),x,0.42,-0.7);}); return g; }
+  fLamp(M){ const g=new THREE.Group(); this._p(g,this._cy(0.04,0.05,0.3,M.metal),0,0.15,0); this._p(g,this._cy(0.13,0.1,0.16,M.warm),0,0.36,0); return g; }
+  fWardrobe(w,M){ const g=new THREE.Group(); this._p(g,this._b(w,2.2,0.55,M.woodL),0,1.1,0); for(let i=0;i<Math.round(w/0.6);i++){this._p(g,this._b(0.02,1.8,0.02,M.metal),-w/2+0.05+w/Math.round(w/0.6)*(i+0.5),1.1,0.28);} return g; }
+  fTV(w,M){ const g=new THREE.Group(); this._p(g,this._b(w,0.4,0.4,M.woodD),0,0.2,0); this._p(g,this._b(Math.min(w,1.7),0.96,0.06,M.screen),0,1.15,-0.1); return g; }
+  fKitchen(len,M,island){ const g=new THREE.Group(); this._p(g,this._b(len,0.9,0.62,M.woodL),0,0.45,0); this._p(g,this._b(len+0.06,0.06,0.66,M.marbleD),0,0.92,0);
+    this._p(g,this._b(0.45,0.04,0.34,M.steel),len*0.18,0.95,0); this._p(g,this._b(0.5,0.02,0.5,M.dark),-len*0.2,0.95,0);
+    this._p(g,this._b(len*0.8,0.5,0.34,M.woodL),0,1.85,-0.14); this._p(g,this._b(0.6,1.6,0.6,M.steel),len/2-0.3,0.8,0);
+    this._p(g,this._b(0.5,0.5,0.34,M.dark),len*0.2,1.85,-0.14);
+    if(island){const is=new THREE.Group();this._p(is,this._b(2.2,0.9,0.95,M.woodD),0,0.45,0);this._p(is,this._b(2.3,0.07,1.05,M.marble),0,0.93,0);is.position.set(0,0,island);g.add(is);} return g; }
+  fBath(M){ const g=new THREE.Group(); this._p(g,this._b(1.0,0.85,0.5,M.woodL),-0.5,0.42,0); this._p(g,this._b(1.05,0.05,0.55,M.marble),-0.5,0.87,0); this._p(g,this._b(0.4,0.12,0.32,M.white),-0.5,0.9,0);
+    this._p(g,this._b(0.7,0.7,0.04,M.glass),-0.5,1.5,-0.24); this._p(g,this._b(0.55,0.7,0.55,M.white),0.5,0.35,0.2); this._p(g,this._b(0.04,1.9,1.0,M.glass),0.0,0.95,-0.2); return g; }
+  fPlant(h,M){ const g=new THREE.Group(); this._p(g,this._cy(0.16,0.2,0.3,M.pot),0,0.15,0); this._p(g,new THREE.Mesh(new THREE.SphereGeometry(h*0.4,10,10),M.plant),0,0.3+h*0.4,0); this._p(g,this._b(0.5,h*0.6,0.5,M.plant),0,0.5+h*0.3,0).visible=false; return g; }
+  fRug(w,d,M,col){ const m=this._b(w,0.02,d,col||M.rug); return m; }
+  fArt(w,h,M){ const g=new THREE.Group(); this._p(g,this._b(w,h,0.04,M.woodD),0,0,0); this._p(g,this._b(w-0.08,h-0.08,0.05,M.fabric),0,0,0.01); return g; }
+
+  // ============ ROOM SHELL ============
+  _room(g,M,X,Z,h,glassZ){ // floor,ceiling,walls; glass on +Z (glassZ true)
+    this._p(g,this._b(X*2,0.12,Z*2,M.wood),0,0,0).receiveShadow=true;
+    this._p(g,this._b(X*2,0.1,Z*2,M.ceil),0,h,0);
+    this._p(g,this._b(X*2,h,0.12,M.wall),0,h/2,-Z); // back
+    this._p(g,this._b(0.12,h,Z*2,M.wall),-X,h/2,0); this._p(g,this._b(0.12,h,Z*2,M.wall),X,h/2,0);
+    if(glassZ){ // front glass wall + mullions
+      const gw=this._b(X*2,h,0.08,M.glassExt); this._p(g,gw,0,h/2,Z); gw.material=M.glass;
+      this._p(g,this._b(X*2,0.16,0.16,M.dark),0,0.08,Z); this._p(g,this._b(X*2,0.16,0.16,M.dark),0,h-0.08,Z);
+      for(let i=0;i<=Math.round(X*2/1.4);i++){this._p(g,this._b(0.1,h,0.1,M.dark),-X+ (X*2/Math.round(X*2/1.4))*i,h/2,Z);}
+    } else { this._p(g,this._b(X*2,h,0.12,M.wall),0,h/2,Z); }
+  }
+  fBalcony(g,M,X,Z,h){ this._p(g,this._b(X*2,0.12,2.0,M.stone),0,0,Z+1.0).receiveShadow=true;
+    this._p(g,this._b(X*2,0.06,0.06,M.metal),0,1.0,Z+2.0); for(let i=0;i<=Math.round(X*2/0.9);i++){this._p(g,this._b(0.05,1.0,0.05,M.metal),-X+(X*2/Math.round(X*2/0.9))*i,0.5,Z+2.0);}
+    this._p(g,this.fPlant(0.7,M),X-0.5,0.06,Z+1.4); const ch=this.fChair(M);ch.position.set(-X+0.6,0.0,Z+1.3);g.add(ch); }
+
+  // ============ INTERIORS ============
+  buildInterior(kind){
+    const M=this.MAT, g=new THREE.Group(); let h=2.85;
+    let X,Z,anchors;
+    if(kind==='1BR'){ X=4; Z=3.5; this._room(g,M,X,Z,h,true); this.fBalcony(g,M,X,Z,h);
+      // partition: bedroom left
+      this._p(g,this._b(0.1,h,Z*1.3,M.wall2),-0.4,h/2,-1.0);
+      // living (right-front)
+      let s=this.fSofa(2.4,M);s.position.set(1.9,0,1.7);s.rotation.y=Math.PI;g.add(s);
+      this._p(g,this.fRug(2.6,2.0,M),1.9,0.01,1.4); this._p(g,this.fTable(1.0,0.5,0.34,M),1.9,0,0.9);
+      let tv=this.fTV(1.8,M);tv.position.set(3.6,0,1.2);tv.rotation.y=-Math.PI/2;g.add(tv);
+      // kitchen (right-back)
+      let k=this.fKitchen(2.6,M);k.position.set(2.4,0,-3.0);g.add(k);
+      let d=this.fDining(2,M);d.position.set(1.6,0,-0.8);g.add(d);
+      // bedroom (left)
+      let bed=this.fBed(1.6,M);bed.position.set(-2.2,0,1.6);bed.rotation.y=Math.PI;g.add(bed);
+      let wd=this.fWardrobe(1.6,M);wd.position.set(-3.5,0,-1.5);wd.rotation.y=Math.PI/2;g.add(wd);
+      // bath (left-back corner)
+      let ba=this.fBath(M);ba.position.set(-2.8,0,-2.9);g.add(ba); this._p(g,this._b(2.4,h,0.1,M.wall2),-2.6,h/2,-1.7); this._p(g,this._b(0.1,h,1.5,M.wall2),-1.4,h/2,-2.6);
+      this._p(g,this.fArt(1.0,0.7,M),1.9,1.7,-3.9); this._p(g,this.fPlant(1.0,M),3.4,0.06,-0.2);
+      anchors={overview:[[6.5,4.2,7.5],[0,1.4,0]],living:[[1.9,1.7,4.6],[2.4,1.0,0.5]],kitchen:[[0.4,1.8,-0.5],[3.0,0.9,-3.0]],bedroom:[[0.0,1.7,2.0],[-2.6,0.8,0.5]],bath:[[-0.5,1.8,-1.2],[-2.8,0.9,-2.9]],balcony:[[1.5,1.6,3.2],[1.0,1.0,6.0]]};
+    } else if(kind==='2BR'){ X=6; Z=4.5; this._room(g,M,X,Z,h,true); this.fBalcony(g,M,X,Z,h);
+      this._p(g,this._b(0.1,h,Z*1.4,M.wall2),-1.6,h/2,-0.6);
+      let s=this.fSofa(3.0,M);s.position.set(2.4,0,2.4);s.rotation.y=Math.PI;g.add(s);
+      let s2=this.fSofa(1.6,M,M.sofa2);s2.position.set(4.6,0,0.7);s2.rotation.y=-Math.PI/2;g.add(s2);
+      this._p(g,this.fRug(3.2,2.6,M),2.8,0.01,1.6); this._p(g,this.fTable(1.3,0.6,0.34,M),2.8,0,1.4);
+      let tv=this.fTV(2.0,M);tv.position.set(5.7,0,1.8);tv.rotation.y=-Math.PI/2;g.add(tv);
+      let k=this.fKitchen(3.2,M);k.position.set(3.2,0,-3.9);g.add(k);
+      let d=this.fDining(4,M);d.position.set(3.0,0,-1.6);g.add(d);
+      let bed=this.fBed(2.0,M);bed.position.set(-3.6,0,2.2);bed.rotation.y=Math.PI;g.add(bed);
+      let wd=this.fWardrobe(2.2,M);wd.position.set(-5.3,0,0.2);wd.rotation.y=Math.PI/2;g.add(wd);
+      this._p(g,this._b(0.1,h,4.0,M.wall2),-3.4,h/2,-1.0); let bed2=this.fBed(1.4,M);bed2.position.set(-4.6,0,-2.6);g.add(bed2);
+      let ba=this.fBath(M);ba.position.set(-1.0,0,-3.6);g.add(ba); this._p(g,this._b(2.2,h,0.1,M.wall2),-1.4,h/2,-2.4);
+      this._p(g,this.fArt(1.4,0.9,M),2.8,1.8,-4.9); this._p(g,this.fPlant(1.2,M),5.4,0.06,-0.6); this._p(g,this.fPlant(0.9,M),-5.4,0.06,3.6);
+      anchors={overview:[[9.5,5.0,10],[0,1.4,0]],living:[[2.6,1.8,6.0],[3.2,1.0,0.8]],kitchen:[[1.0,2.0,-0.5],[3.4,0.9,-3.9]],master:[[-1.0,1.8,3.0],[-4.0,0.8,1.0]],bed2:[[-2.2,1.8,-0.6],[-4.6,0.8,-2.6]],bath:[[0.6,1.9,-1.6],[-1.0,0.9,-3.6]],balcony:[[2.0,1.6,4.5],[2.0,1.0,7.5]]};
+    } else { X=9; Z=6; h=3.3; this._room(g,M,X,Z,h,true); // PENTHOUSE
+      // terrace with jacuzzi
+      this._p(g,this._b(X*2,0.12,3.4,M.stone),0,0,Z+1.7).receiveShadow=true;
+      this._p(g,this._b(2.4,0.5,2.0,M.tile),X-2.4,0.25,Z+1.7); this._p(g,this._b(2.1,0.4,1.7,M.water),X-2.4,0.45,Z+1.7);
+      this._p(g,this._b(X*2,0.06,0.06,M.glass),0,1.0,Z+3.4); for(let i=0;i<=Math.round(X*2/1.2);i++)this._p(g,this._b(0.04,1.0,0.04,M.steel),-X+(X*2/Math.round(X*2/1.2))*i,0.5,Z+3.4);
+      let lo=this.fSofa(2.0,M,M.sofa2);lo.position.set(-X+2.5,0,Z+1.6);g.add(lo);
+      // open living
+      let s=this.fSofa(3.4,M);s.position.set(2.5,0,3.0);s.rotation.y=Math.PI;g.add(s);
+      let s2=this.fSofa(2.4,M,M.sofa2);s2.position.set(-1.0,0,2.6);s2.rotation.y=Math.PI/2;g.add(s2);
+      this._p(g,this.fRug(4.4,3.2,M,M.rugD),1.6,0.01,2.0); this._p(g,this.fTable(1.6,0.8,0.32,M,M.marble),1.6,0,2.2);
+      let tv=this.fTV(2.6,M);tv.position.set(2.6,0,4.9);tv.rotation.y=Math.PI;g.add(tv);
+      // island kitchen
+      let k=this.fKitchen(4.0,M,1.6);k.position.set(4.5,0,-4.0);g.add(k);
+      let d=this.fDining(8,M);d.position.set(5.0,0,-0.6);g.add(d);
+      // master suite (left, partitioned)
+      this._p(g,this._b(0.12,h,7.0,M.wall2),-2.5,h/2,-1.0);
+      let bed=this.fBed(2.2,M);bed.position.set(-5.6,0,1.2);bed.rotation.y=Math.PI;g.add(bed);
+      let wd=this.fWardrobe(3.0,M);wd.position.set(-8.2,0,-1.0);wd.rotation.y=Math.PI/2;g.add(wd);
+      let ba=this.fBath(M);ba.position.set(-5.0,0,-4.4);g.add(ba); this._p(g,this._b(5.0,h,0.1,M.wall2),-6.0,h/2,-2.6);
+      this._p(g,this.fArt(2.0,1.2,M),2.0,2.0,-5.9); this._p(g,this.fPlant(1.6,M),8.2,0.06,4.0); this._p(g,this.fPlant(1.3,M),-1.0,0.06,-4.0);
+      // chandelier
+      const ch=new THREE.Group(); for(let i=0;i<5;i++)this._p(ch,new THREE.Mesh(new THREE.SphereGeometry(0.12,10,10),M.warm),(i-2)*0.4,-Math.random()*0.4,0); this._p(g,ch,5.0,h-0.4,-0.6);
+      anchors={overview:[[13,6.5,14],[0,1.6,0]],living:[[3.0,2.0,8.0],[2.0,1.0,2.0]],kitchen:[[1.5,2.4,-0.5],[4.6,0.9,-3.6]],dining:[[2.0,2.2,1.5],[5.0,0.9,-0.6]],master:[[-2.0,2.2,4.0],[-6.0,0.9,0.5]],terrace:[[2.0,2.0,5.5],[3.0,1.0,9.5]]};
+    }
+    // ceiling lights + point light
+    g.add(new THREE.AmbientLight(0xfff1e2,0.22));
+    const L=new THREE.PointLight(0xffe6c0,0.85,kind==='PH'?40:26,1); L.position.set(0,h-0.3,0.3); g.add(L);
+    const L2=new THREE.PointLight(0xffe6c0,0.55,22,1); L2.position.set(X*0.4,h-0.3,-Z*0.4); g.add(L2);
+    for(let i=0;i<3;i++)this._p(g,new THREE.Mesh(new THREE.CircleGeometry(0.18,16),M.warm),(i-1)*X*0.5,h-0.06,0).rotation.x=Math.PI/2;
+    g.userData.anchors=anchors; return g;
+  }
+
+  // ============ AMENITIES (staged) ============
+  buildParking(){ const M=this.MAT,g=new THREE.Group(),W=30,D=20,h=3.2;
+    this._p(g,this._b(W,0.2,D,M.dark),0,0,0).receiveShadow=true; this._p(g,this._b(W,0.1,D,M.marbleD),0,h,0);
+    for(let x=-12;x<=12;x+=8)for(let z=-7;z<=7;z+=7)this._p(g,this._b(0.6,h,0.6,M.stone),x,h/2,z,true);
+    // parking lines + cars
+    const cols=[M.car1,M.car2,M.car3,M.car1,M.car2]; let ci=0;
+    for(let z=-8;z<=8;z+=16){ for(let x=-13;x<=13;x+=2.6){ this._p(g,this._b(0.08,0.02,4.6,M.white),x,0.12,z<0?-6:6); }
+      for(let x=-12;x<=12;x+=5.2){ const car=this.fCar(cols[ci++%cols.length]); car.position.set(x,0,z<0?-6:6); if(z>0)car.rotation.y=Math.PI; if(Math.random()>0.7)continue; g.add(car);} }
+    // EV chargers + ramp + signage
+    for(let x=-12;x<=-6;x+=5.2)this._p(g,this._b(0.3,1.4,0.3,M.gold),x,0.7,-9.4);
+    this._p(g,this._b(6,0.15,8,M.road),16,1.4,0,false).rotation.z=0.25;
+    for(let i=0;i<6;i++)this._p(g,new THREE.Mesh(new THREE.CircleGeometry(0.3,12),M.warm),-12+i*5,h-0.07,0).rotation.x=Math.PI/2;
+    g.add(new THREE.AmbientLight(0xdfe6f0,0.28)); const al=new THREE.PointLight(0xcfe0ff,0.85,60,1);al.position.set(0,h-0.4,0);g.add(al); const al2=new THREE.PointLight(0xcfe0ff,0.6,45,1);al2.position.set(-10,h-0.4,4);g.add(al2); const al3=new THREE.PointLight(0xcfe0ff,0.6,45,1);al3.position.set(10,h-0.4,-4);g.add(al3);
+    g.userData.cam=[[0,5,17],[0,1.5,0]]; return g; }
+  fCar(col){ const M=this.MAT,g=new THREE.Group(); this._p(g,this._b(4.2,0.7,1.8,col),0,0.55,0,true); this._p(g,this._b(2.6,0.6,1.6,col),-0.1,1.05,0,true); this._p(g,this._b(2.4,0.5,1.5,M.carGlass),-0.1,1.05,0);
+    [[-1.3,0.9],[1.3,0.9],[-1.3,-0.9],[1.3,-0.9]].forEach(([x,z])=>this._p(g,this._cy(0.34,0.34,0.25,M.black,18),x,0.34,z).rotation.x=Math.PI/2);
+    this._p(g,this._b(0.1,0.18,0.5,M.warm),2.1,0.55,0.55);this._p(g,this._b(0.1,0.18,0.5,M.warm),2.1,0.55,-0.55); return g; }
+
+  buildLobby(){ const M=this.MAT,g=new THREE.Group(),W=18,D=16,h=6.5;
+    this._p(g,this._b(W,0.15,D,M.marble),0,0,0).receiveShadow=true; this._p(g,this._b(8,0.02,8,M.marbleD),0,0.09,0);
+    this._p(g,this._b(W,0.2,D,M.ceil),0,h,0); this._p(g,this._b(W,h,0.2,M.wall),0,h/2,-D/2);
+    this._p(g,this._b(0.2,h,D,M.wall),-W/2,h/2,0);
+    // glass entrance front
+    this._p(g,this._b(W,h,0.1,M.glass),0,h/2,D/2); for(let i=-3;i<=3;i++)this._p(g,this._b(0.14,h,0.14,M.dark),i*2.6,h/2,D/2);
+    // feature wall (back, backlit)
+    this._p(g,this._b(7,4.6,0.3,M.woodD),0,2.6,-D/2+0.2); for(let i=0;i<7;i++)this._p(g,this._b(0.1,4.2,0.12,M.warm),-3+i,2.6,-D/2+0.36);
+    // reception desk
+    this._p(g,this._b(4.2,1.1,1.0,M.woodL),0,0.55,-3.5); this._p(g,this._b(4.4,0.08,1.1,M.marbleD),0,1.12,-3.5);
+    // lift lobby (3 doors right side)
+    this._p(g,this._b(0.2,h,D,M.marbleD),W/2,h/2,0); for(let i=-1;i<=1;i++){this._p(g,this._b(0.12,2.6,1.5,M.brass),W/2-0.1,1.4,i*3); this._p(g,this._b(0.06,0.2,1.5,M.dark),W/2-0.18,2.7,i*3); this._p(g,new THREE.Mesh(new THREE.CircleGeometry(0.08,12),M.warm),W/2-0.22,1.6,i*3+0.85).rotation.y=-Math.PI/2;}
+    // lounge
+    let s=this.fSofa(3.0,M);s.position.set(-5,0,3);s.rotation.y=0;g.add(s); let s2=this.fSofa(3.0,M,M.sofa2);s2.position.set(-5,0,5.6);s2.rotation.y=Math.PI;g.add(s2);
+    this._p(g,this.fTable(1.4,0.7,0.34,M,M.marble),-5,0,4.3);
+    this._p(g,this.fPlant(1.8,M),-7.5,0.08,-2); this._p(g,this.fPlant(1.6,M),6,0.08,5.5); this._p(g,this.fRug(5,4,M,M.rugD),-5,0.1,4.3);
+    // chandelier cluster
+    const ch=new THREE.Group(); for(let i=0;i<14;i++)this._p(ch,new THREE.Mesh(new THREE.SphereGeometry(0.13,10,10),M.warm),(Math.random()-0.5)*3.2,-Math.random()*1.8,(Math.random()-0.5)*2.4); this._p(g,ch,0,h-0.6,1);
+    g.add(new THREE.AmbientLight(0xfff0d8,0.3)); g.add(new THREE.HemisphereLight(0xfff2dc,0x3a3026,0.22)); const l=new THREE.PointLight(0xffe2b0,1.1,70,1);l.position.set(0,h-1,1);g.add(l); const l2=new THREE.PointLight(0xffe2b0,0.7,45,1);l2.position.set(-5,3,4);g.add(l2);
+    g.userData.cam=[[-2,4.5,13],[0,2.6,-2]]; return g; }
+
+  buildGym(){ const M=this.MAT,g=new THREE.Group(),W=16,D=12,h=3.6;
+    this._p(g,this._b(W,0.15,D,M.dark),0,0,0).receiveShadow=true; this._p(g,this._b(W,0.15,D,M.ceil),0,h,0);
+    this._p(g,this._b(W,h,0.1,M.glass),0,h/2,D/2); this._p(g,this._b(W,h,0.12,M.marbleD),0,h/2,-D/2); this._p(g,this._b(0.12,h,D,M.wall),-W/2,h/2,0);
+    // mirror wall hint
+    this._p(g,this._b(W-1,h-0.6,0.04,M.glassExt),0,h/2,-D/2+0.1);
+    // treadmills
+    for(let i=-1;i<=1;i++){const t=new THREE.Group();this._p(t,this._b(0.8,0.25,1.8,M.dark),0,0.13,0);this._p(t,this._b(0.8,1.2,0.1,M.black),0,0.7,-0.8);this._p(t,this._b(0.6,0.5,0.05,M.screen),0,1.1,-0.78);t.position.set(i*1.4,0,-3.5);g.add(t);}
+    // weight rack + bench
+    this._p(g,this._b(2.6,1.4,0.4,M.steel),-4,0.7,2.5); for(let i=0;i<4;i++)this._p(g,this._cy(0.18,0.18,0.5,M.dark,16),-5+i*0.7,0.5,2.7).rotation.z=Math.PI/2;
+    this._p(g,this._b(0.5,0.5,1.8,M.black),3,0.45,2); this._p(g,this._b(1.8,1.6,0.3,M.steel),5,0.8,3); 
+    // yoga mats
+    for(let i=0;i<3;i++)this._p(g,this._b(0.7,0.04,1.8,i%2?M.sofa2:M.gold),-5+i*0.9,0.04,5);
+    this._p(g,this.fPlant(1.4,M),6,0.08,-3);
+    g.add(new THREE.AmbientLight(0xeef2fb,0.32)); g.add(new THREE.HemisphereLight(0xeef4ff,0x30363e,0.22)); const l=new THREE.PointLight(0xeaf0ff,1.0,60,1);l.position.set(0,h-0.4,0);g.add(l); const l2=new THREE.PointLight(0xeaf0ff,0.6,45,1);l2.position.set(4,h-0.4,3);g.add(l2);
+    g.userData.cam=[[0,3.5,12],[0,1.5,-1]]; return g; }
+
+  // ============ EXTERIOR ============
+  buildExterior(){ const M=this.MAT,T=THREE, root=new T.Group(); this.three.scene.add(root);
+    // site
+    const ground=this._p(root,new T.Mesh(new T.CircleGeometry(160,64),M.road),0,-0.02,0); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true;
+    const plaza=this._p(root,new T.Mesh(new T.CircleGeometry(34,64),M.marbleD),0,0,0); plaza.rotation.x=-Math.PI/2; plaza.receiveShadow=true;
+    // podium base (parking/amenity level)
+    this._p(root,this._b(30,2.4,22,M.stone),0,-1.2,0,true);
+    this._p(root,this._b(31,0.3,23,M.marbleD),0,0.05,0);
+    // drop-off canopy + cars outside + landscaping
+    this._p(root,this._b(11,0.3,5,M.dark),0,3.0,12.4,true); for(let x=-4;x<=4;x+=4)this._p(root,this._cy(0.18,0.18,3,M.steel),x,1.5,11.2);
+    [[-18,16,M.car3],[-12,18,M.car1]].forEach(([x,z,c])=>{const car=this.fCar(c);car.position.set(x,0,z);car.rotation.y=0.4;root.add(car);});
+    for(let i=0;i<10;i++){const a=i/10*Math.PI*2;this._p(root,this.fPlant(1.6,M),Math.cos(a)*30,0.05,Math.sin(a)*22).scale.setScalar(1.3);}
+    this._p(root,this.fPlant(2.4,M),24,0.05,8).scale.setScalar(1.6); this._p(root,this.fPlant(2.4,M),-24,0.05,6).scale.setScalar(1.6);
+    // pool deck (+X terrace)
+    const pool=new T.Group(); this._p(pool,this._b(20,0.3,16,M.marble),0,0.16,0); this._p(pool,this._b(11,0.4,5.5,M.water),0,0.3,0); this._p(pool,this._b(11.4,0.05,5.9,M.tile),0,0.06,0);
+    for(let i=-1;i<=1;i++){const ln=new T.Group();this._p(ln,this._b(0.7,0.2,2.0,M.white),0,0.32,0);this._p(ln,this._b(0.7,0.5,0.7,M.white),0,0.5,-0.8);ln.position.set(-4+i*1.4,0,4.6);pool.add(ln);}
+    this._p(pool,this._b(4,2.4,3,M.woodL),6.5,1.2,-4); this._p(pool,this._b(4.4,0.2,3.4,M.woodD),6.5,2.4,-4);
+    for(let i=0;i<6;i++)this._p(pool,this.fPlant(1.2,M),-9+i*3.6,0.16,7.4); pool.position.set(26,0,4); root.add(pool); this._poolGrp=pool;
+    // tower
+    const tower=new T.Group(); root.add(tower); this._buildTower(tower,M); this._tower=tower;
+    // glass elevator + cab (left side)
+    const shaft=new T.Group(); const totalH=8*this.FH; this._p(shaft,this._b(2.6,totalH+0.6,3.0,M.glassExt),0,totalH/2,0); 
+    for(let y=0;y<=8;y++)this._p(shaft,this._b(2.7,0.18,3.1,M.dark),0,y*this.FH,0); for(let i=0;i<4;i++)this._p(shaft,this._b(0.12,totalH,0.12,M.dark),(i<2?-1:1)*1.3,totalH/2,(i%2?-1:1)*1.5);
+    const cab=this._b(2.0,2.6,2.2,M.gold); this._p(shaft,cab,0,1.6,0); this._cab=cab;
+    const cabL=new T.PointLight(0xffe6b0,0.8,8,2); cab.add(cabL);
+    shaft.position.set(-13.5,0,0); tower.add(shaft);
+    // crown / roof parapet + sky lounge
+    const sky=this._buildSky(M); sky.position.set(0,totalH+0.1,0); root.add(sky); this._skyGrp=sky;
+    return root;
+  }
+  _buildTower(building,M){ const T=THREE,FH=this.FH;
+    const slabMat=M.dark, bandBase=()=>new T.MeshStandardMaterial({color:0x14181e,roughness:0.45,metalness:0.65,emissive:0x000000,emissiveIntensity:0});
+    const mkGlass=()=>new T.MeshStandardMaterial({color:0x1a2230,roughness:0.12,metalness:0.15,transparent:true,opacity:0.5,emissive:0x000000,emissiveIntensity:0});
+    const floorsGfx={},pickBoxes=[];
+    const buildFloor=f=>{ const isPH=f===8,base=(f-1)*FH,g=new T.Group();building.add(g);const hx=isPH?8:12,hz=isPH?5.5:8;
+      this._p(g,this._b(24.6,0.32,16.6,slabMat),0,base+0.16,0,true).receiveShadow=true;
+      const gh=FH-0.6,gy=base+0.16+gh/2+0.12,gMat=mkGlass(),glassPanels={};
+      const front=this._p(g,this._b(hx*2,gh,0.12,gMat),0,gy,hz);glassPanels.front=front; this._p(g,this._b(hx*2,gh,0.12,gMat),0,gy,-hz);
+      this._p(g,this._b(0.12,gh,hz*2,gMat),-hx,gy,0);this._p(g,this._b(0.12,gh,hz*2,gMat),hx,gy,0);
+      const bMat=bandBase();this._p(g,this._b(hx*2+0.5,0.5,hz*2+0.5,bMat),0,base+FH-0.05,0,true);
+      const mul=new T.MeshStandardMaterial({color:0x0d1116,roughness:0.5,metalness:0.7});
+      for(let i=-Math.floor(hx);i<=Math.floor(hx);i+=3)this._p(g,this._b(0.12,gh+0.4,0.12,mul),i,gy,hz);
+      [[-hx,hz],[hx,hz],[-hx,-hz],[hx,-hz]].forEach(([mx,mz])=>this._p(g,this._b(0.28,gh+0.5,0.28,mul),mx,gy,mz,true));
+      // balconies
+      if(!isPH){[[-9,4.5],[ -3,4.5],[3,4.5],[9,4.5]].forEach(([bx,bz])=>this._balcony(g,M,bx,base+0.16,hz,2.5));
+               [[-8,-4.5],[0,-4.5],[8,-4.5]].forEach(([bx])=>this._balcony(g,M,bx,base+0.16,-hz,3.0,true));}
+      // plates
+      const plates={};this.units().filter(u=>u.floor===f).forEach(u=>{const pMat=new T.MeshStandardMaterial({color:new T.Color(this.statusColor(u.status)),roughness:0.5,metalness:0.2,emissive:new T.Color(0xff9d40),emissiveIntensity:0});const pl=this._p(g,this._b(u.cell.w-0.5,0.14,u.cell.d-0.5,pMat),u.cell.cx,base+0.34,u.cell.zc);plates[u.id]={mesh:pl,mat:pMat,worldY:base+0.9,u};});
+      if(isPH){const railMat=M.steel;[[24.2,0.1,0,8.2],[24.2,0.1,0,-8.2],[0.1,16.2,12.1,0],[0.1,16.2,-12.1,0]].forEach(([w,d,x,z])=>this._p(g,this._b(w,1.1,d,railMat),x,base+0.9,z,true));this._p(g,this._b(17,0.3,12,slabMat),0,base+FH+0.05,0,true);}
+      const pb=this._p(g,new T.Mesh(new T.BoxGeometry(hx*2+0.6,FH,hz*2+0.6),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})),0,base+FH/2,0);pb.userData.floor=f;pickBoxes.push(pb);
+      floorsGfx[f]={group:g,glassMat:gMat,bandMat:bMat,glassPanels,plates,base,isPH};
+    };
+    for(let f=1;f<=8;f++)buildFloor(f);
+    this.three.floorsGfx=floorsGfx;this.three.pickBoxes=pickBoxes;
+  }
+  _balcony(g,M,x,y,z,w,back){ const s=Math.sign(z),zz=z+s*1.0; this._p(g,this._b(w,0.14,2.0,M.stone),x,y,zz,true);
+    this._p(g,this._b(w,0.05,0.05,M.metal),x,y+1.0,z+s*2.0); for(let i=0;i<=Math.round(w/0.8);i++)this._p(g,this._b(0.04,1.0,0.04,M.metal),x-w/2+(w/Math.round(w/0.8))*i,y+0.5,z+s*2.0);
+    this._p(g,this._b(w-0.6,0.9,0.04,M.glass),x,y+0.5,z+s*2.0); }
+  _buildSky(M){ const T=THREE,g=new T.Group();
+    this._p(g,this._b(17,0.2,12,M.wood),0,0,0); // deck
+    // glass rail
+    this._p(g,this._b(17,0.06,0.06,M.steel),0,1.0,6); this._p(g,this._b(17,0.9,0.04,M.glass),0,0.5,6);
+    this._p(g,this._b(0.04,0.9,12,M.glass),8.5,0.5,0); this._p(g,this._b(0.04,0.9,12,M.glass),-8.5,0.5,0);
+    // bar
+    this._p(g,this._b(5,1.1,1.0,M.woodD),-4,0.55,-4); this._p(g,this._b(5.2,0.08,1.1,M.marbleD),-4,1.12,-4);
+    for(let i=-1;i<=1;i++)this._p(g,this._cy(0.18,0.2,0.7,M.dark,14),-5+i*1.4,0.35,-3.0);
+    // lounge + firepit
+    let s=this.fSofa(3.0,M,M.sofa2);s.position.set(3,0,2);s.rotation.y=Math.PI;g.add(s); let s2=this.fSofa(2.4,M);s2.position.set(5.5,0,0);s2.rotation.y=-Math.PI/2;g.add(s2);
+    this._p(g,this._cy(0.7,0.7,0.4,M.marbleD,20),4,0.2,0.5); this._p(g,this._cy(0.5,0.5,0.2,M.warm,16),4,0.45,0.5);
+    // pergola + planters
+    this._p(g,this._b(8,0.15,5,M.woodD),3,3.0,1); for(let x=0;x<=6;x+=6)for(let z=-1;z<=3;z+=4)this._p(g,this._b(0.16,3,0.16,M.woodD),x,1.5,z);
+    for(let i=0;i<5;i++)this._p(g,this.fPlant(1.4,M),-8+i*1.6,0.1,5.4);
+    // city silhouettes (distant)
+    for(let i=0;i<14;i++){const bh=8+Math.random()*22,a=i/14*Math.PI*2;this._p(g,this._b(4+Math.random()*4,bh,4,M.dark),Math.cos(a)*70,bh/2-6,Math.sin(a)*60);}
+    const fp=new T.PointLight(0xff8a3a,0.7,10,2);fp.position.set(4,0.8,0.5);g.add(fp);
+    g.userData.cam=[[14,5,16],[0,1,0]]; return g; }
+
+  // ============ INIT ============
+  initThree(){ const T=THREE,host=this.glEl;if(!host)return; this.MAT=this._mats();
+    const W=host.clientWidth||innerWidth,H=host.clientHeight||innerHeight;
+    const scene=new T.Scene();scene.fog=new T.FogExp2(0x080c12,0.008);
+    const camera=new T.PerspectiveCamera(42,W/H,0.4,500);camera.position.set(40,28,46);
+    const renderer=new T.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setSize(W,H);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;host.appendChild(renderer.domElement);
+    const controls=new T.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=0.08;controls.minDistance=22;controls.maxDistance=160;controls.maxPolarAngle=Math.PI*0.49;controls.target.set(0,13,0);controls.autoRotate=true;controls.autoRotateSpeed=0.4;controls.addEventListener('start',()=>{if(this.state.view==='exterior')controls.autoRotate=false;});
+    const hemi=new T.HemisphereLight(0x29344f,0x05070a,0.5);scene.add(hemi);
+    const dir=new T.DirectionalLight(0xffffff,1.0);dir.position.set(-42,44,22);dir.castShadow=true;dir.shadow.mapSize.set(2048,2048);const sc=dir.shadow.camera;sc.left=-50;sc.right=50;sc.top=64;sc.bottom=-14;sc.near=1;sc.far=220;dir.shadow.bias=-0.0004;scene.add(dir);scene.add(dir.target);
+    const fill=new T.DirectionalLight(0x4a5a78,0.25);fill.position.set(40,20,-30);scene.add(fill);
+    this.three={T,scene,camera,renderer,controls,hemi,dir,fill};
+    this.G={exterior:this.buildExterior(),staged:{}}; this._curView=null;
+    this._raycaster=new T.Raycaster();this._mouse=new T.Vector2();this._hoverFloor=null;this._camGoal=new T.Vector3(0,13,0);
+    renderer.domElement.addEventListener('pointermove',e=>this._onMove(e));renderer.domElement.addEventListener('click',e=>this._onClick(e));renderer.domElement.style.cursor='grab';
+    this._onResize=()=>this._resize();addEventListener('resize',this._onResize);
+    this._applyTod();this._applySelection();this._applyCutaway();this._buildHotspots();
+    window.__aura=this; this._syncView(); if(this.loadEl)this.loadEl.style.display='none';this._animate();
+  }
+  _resize(){if(!this.three||!this.glEl)return;const{camera,renderer}=this.three;camera.aspect=this.glEl.clientWidth/this.glEl.clientHeight;camera.updateProjectionMatrix();renderer.setSize(this.glEl.clientWidth,this.glEl.clientHeight);}
+
+  // staged scenes
+  STAGE={parking:[300,0,0],lobby:[340,0,0],gym:[380,0,0],int1BR:[420,0,0],int2BR:[460,0,0],intPH:[500,0,0]};
+  _ensureStage(key){ if(this.G.staged[key])return this.G.staged[key]; let grp;
+    try{
+    if(key==='parking')grp=this.buildParking(); else if(key==='lobby')grp=this.buildLobby(); else if(key==='gym')grp=this.buildGym();
+    else if(key.startsWith('int'))grp=this.buildInterior(key.slice(3));
+    }catch(e){ console.error('STAGE BUILD FAIL',key,e&&e.message,e&&e.stack); window.__buildErr=(e&&e.stack)||(''+e); throw e; }
+    const off=this.STAGE[key];grp.position.set(off[0],off[1],off[2]);grp.visible=false;this.three.scene.add(grp);this.G.staged[key]=grp;return grp; }
+
+  // ============ VIEW SYNC ============
+  _intKey(){ const u=this.unitById(this.state.unit); return 'int'+(u?u.kind:'1BR'); }
+  _syncView(){ const v=this.state.view;
+    if(v===this._curView){ if(v==='interior') this._applyRoom(); return; }
+    this._curView=v; const {controls}=this.three;
+    // visibility
+    this.G.exterior.visible=(v==='exterior'||v==='pool'||v==='sky');
+    Object.values(this.G.staged).forEach(s=>s.visible=false);
+    if(v==='parking'){const s=this._ensureStage('parking');s.visible=true;this._camTo(this._off('parking',s.userData.cam[0]),this._off('parking',s.userData.cam[1]),{min:5,max:40,polar:1.45});}
+    else if(v==='lobby'){const s=this._ensureStage('lobby');s.visible=true;this._camTo(this._off('lobby',s.userData.cam[0]),this._off('lobby',s.userData.cam[1]),{min:4,max:36,polar:1.45});}
+    else if(v==='gym'){const s=this._ensureStage('gym');s.visible=true;this._camTo(this._off('gym',s.userData.cam[0]),this._off('gym',s.userData.cam[1]),{min:4,max:32,polar:1.45});}
+    else if(v==='pool'){this._camTo([30,7,20],[26,0.6,3],{min:6,max:80,polar:1.4});}
+    else if(v==='sky'){const o=8*this.FH;this._camTo([14,o+5,16],[0,o+1,0],{min:6,max:90,polar:1.45});}
+    else if(v==='interior'){const k=this._intKey();const s=this._ensureStage(k);s.visible=true;const a=s.userData.anchors.overview;this._camTo(this._off(k,a[0]),this._off(k,a[1]),{min:2,max:30,polar:1.5});}
+    else {this._camTo([40,28,46],[0,13,0],{min:22,max:160,polar:Math.PI*0.49,auto:true});}
+  }
+  _off(key,arr){const o=this.STAGE[key]||[0,0,0];return [arr[0]+o[0],arr[1]+o[1],arr[2]+o[2]];}
+  _applyRoom(){ if(this.state.view!=='interior')return; const k=this._intKey(),s=this.G.staged[k];if(!s)return;const a=s.userData.anchors[this.state.room]||s.userData.anchors.overview;
+    if(this._lastRoom!==this.state.room){this._lastRoom=this.state.room;this._camTo(this._off(k,a[0]),this._off(k,a[1]),{min:1.5,max:30,polar:1.55});} }
+
+  _camTo(pos,tgt,opts){const{camera,controls}=this.three;this._tw={p0:camera.position.clone(),p1:new THREE.Vector3(...pos),t0:controls.target.clone(),t1:new THREE.Vector3(...tgt),k:0};controls.enabled=false;controls.autoRotate=false;this._twA=opts||{};}
+  _ease(x){return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;}
+
+  // ============ EXTERIOR INTERACTIONS ============
+  _applyTod(){const p=this.TOD[this.state.tod],{scene,hemi,dir,fill,floorsGfx}=this.three;if(this.skyEl)this.skyEl.style.background=p.sky;
+    const enclosed=['interior','parking','lobby','gym'].includes(this.state.view);
+    if(enclosed){ if(this.skyEl)this.skyEl.style.background='radial-gradient(circle at 50% 40%,#1b1f27,#0a0c11 75%)'; scene.fog.color.setHex(0x141820); scene.fog.density=0.0012; hemi.color.setHex(0xeef0f8); hemi.groundColor.setHex(0x3a3640); hemi.intensity=0.32; dir.color.setHex(0xfff2e2); dir.intensity=0.5; dir.position.set(24,42,20); fill.intensity=0.12; }
+    else { scene.fog.color.setHex(p.fog); scene.fog.density=p.fogD; hemi.color.setHex(p.hemiSky); hemi.groundColor.setHex(p.hemiGnd); hemi.intensity=Math.max(p.hemiI,0.5); dir.color.setHex(p.dirC); dir.intensity=p.dirI; dir.position.set(...p.dirPos); fill.intensity=0.25; }
+    if(floorsGfx)for(let f=1;f<=8;f++){const g=floorsGfx[f];g.glassMat.emissive.setHex(p.gEmis);g.glassMat.emissiveIntensity=p.gEmisI;}}
+  _applyCutaway(){const cut=this.state.cutaway,{floorsGfx}=this.three;if(!floorsGfx)return;for(let f=1;f<=8;f++){const g=floorsGfx[f];g.glassPanels.front.visible=!cut;g.glassMat.opacity=cut?0.07:(this.state.floor&&this.state.floor!==f?0.34:0.5);}}
+  _applySelection(){const{floorsGfx}=this.three;if(!floorsGfx)return;const sel=this.state.floor,hov=this._hoverFloor,p=this.TOD[this.state.tod];for(let f=1;f<=8;f++){const g=floorsGfx[f],isSel=sel===f,isHov=hov===f;
+    if(isSel){g.bandMat.color.setHex(0xc9a24b);g.bandMat.emissive.setHex(0xc9a24b);g.bandMat.emissiveIntensity=0.55;}else if(isHov){g.bandMat.color.setHex(0x6a5a38);g.bandMat.emissive.setHex(0xc9a24b);g.bandMat.emissiveIntensity=0.2;}else{g.bandMat.color.setHex(0x14181e);g.bandMat.emissive.setHex(0x000000);g.bandMat.emissiveIntensity=0;}
+    g.group.position.z=isSel?0.8:0; if(!this.state.cutaway)g.glassMat.opacity=sel?(isSel?0.55:0.34):0.5;
+    const cut=this.state.cutaway;Object.values(g.plates).forEach(pl=>{const su=isSel&&pl.u.id===this.state.unit;if(cut){pl.mat.color.setStyle(this.statusColor(pl.u.status));pl.mat.emissive.setHex(su?0xc9a24b:0xff9d40);pl.mat.emissiveIntensity=su?0.9:(pl.u.status==='available'?0.35:0.12);}else{pl.mat.color.setHex(su?0x4a3a16:0x111620);let inten=p.plateI*(pl.u.status==='available'?0.7:0.3);if(su){pl.mat.emissive.setHex(0xc9a24b);inten=Math.max(inten,0.55);}else pl.mat.emissive.setHex(0xff9d40);pl.mat.emissiveIntensity=inten;}});}
+    if(this._camGoal&&this.state.view==='exterior'){const g=floorsGfx[sel];this._camGoal.set(0,sel?g.base+this.FH/2:13,0);} }
+  _pick(e){const{camera,pickBoxes}=this.three;if(!pickBoxes)return null;const r=this.glEl.getBoundingClientRect();this._mouse.x=((e.clientX-r.left)/r.width)*2-1;this._mouse.y=-((e.clientY-r.top)/r.height)*2+1;this._raycaster.setFromCamera(this._mouse,camera);const hits=this._raycaster.intersectObjects(pickBoxes,false);return hits.length?hits[0].object.userData.floor:null;}
+  _onMove(e){if(!this.three||this.state.view!=='exterior')return;const f=this._pick(e);this.three.renderer.domElement.style.cursor=f?'pointer':'grab';if(f!==this._hoverFloor){this._hoverFloor=f;this._applySelection();}}
+  _onClick(e){if(!this.three||this.state.view!=='exterior')return;const f=this._pick(e);if(!f)return;const us=this.units().filter(u=>u.floor===f);const a=us.find(u=>u.status==='available')||us[0];this.setState({floor:f,unit:a?a.id:null});}
+
+  _clearHotspots(){if(this.overlayEl){this.overlayEl.innerHTML='';this._hotspots=[];this._hotSig=null;}}
+  _buildHotspots(){if(!this.overlayEl)return;const sel=this.state.floor,sig=sel+'|'+this.state.cutaway+'|ext';if(this._hotSig===sig)return;this._hotSig=sig;this.overlayEl.innerHTML='';this._hotspots=[];if(!sel)return;const{floorsGfx,T}=this.three,g=floorsGfx[sel];
+    this.units().filter(u=>u.floor===sel).forEach(u=>{const pl=g.plates[u.id];if(!pl)return;const el=document.createElement('div');el.className='aura-hot';el.style.cssText='position:absolute;transform:translate(-50%,-50%);will-change:transform';const sc=this.statusColor(u.status),isSel=u.id===this.state.unit;el.innerHTML=`<div style="position:relative;width:14px;height:14px"><div style="position:absolute;inset:0;border-radius:50%;background:${sc};border:2px solid ${isSel?'#fff':'#0a0d12'};box-shadow:0 0 10px ${sc}cc"></div>${u.status==='available'?`<div style="position:absolute;inset:0;border-radius:50%;border:1.5px solid ${sc};animation:auraping 2s ease-out infinite"></div>`:''}</div>`;el.title=`${u.label} · ${u.type} · ${u.priceStr}`;el.addEventListener('click',ev=>{ev.stopPropagation();this.setState({unit:u.id});});el.addEventListener('pointerdown',ev=>ev.stopPropagation());this.overlayEl.appendChild(el);const wp=new T.Vector3();pl.mesh.getWorldPosition(wp);wp.y=pl.worldY;this._hotspots.push({el,pos:wp});});}
+
+  _animate(){this._raf=requestAnimationFrame(()=>this._animate());if(!this.three)return;const{controls,camera,renderer,scene}=this.three;
+    if(this._tw){this._tw.k=Math.min(1,this._tw.k+0.022);const e=this._ease(this._tw.k);camera.position.lerpVectors(this._tw.p0,this._tw.p1,e);controls.target.lerpVectors(this._tw.t0,this._tw.t1,e);camera.lookAt(controls.target);if(this._tw.k>=1){const a=this._twA||{};controls.enabled=true;controls.minDistance=a.min||2;controls.maxDistance=a.max||200;controls.maxPolarAngle=a.polar||Math.PI*0.49;controls.autoRotate=!!a.auto;this._tw=null;}}
+    else{if(this._camGoal&&this.state.view==='exterior'&&!controls.autoRotate)controls.target.lerp(this._camGoal,0.05);controls.update();}
+    // elevator cab
+    if(this._cab){this._cabT=(this._cabT||0)+0.004;const y=1.6+(Math.sin(this._cabT)*0.5+0.5)*(7*this.FH-0.4);this._cab.position.y=y;}
+    if(this._hotspots&&this._hotspots.length&&this.state.view==='exterior'){const r=this.glEl.getBoundingClientRect();this._hotspots.forEach(h=>{const v=h.pos.clone().project(camera);if(v.z<1){h.el.style.display='block';h.el.style.left=((v.x*0.5+0.5)*r.width)+'px';h.el.style.top=((-v.y*0.5+0.5)*r.height)+'px';}else h.el.style.display='none';});}
+    renderer.render(scene,camera);}
+
+  // ============ RENDER VALS ============
+  renderVals(){const units=this.units(),st=this.state,fmt=v=>v.toLocaleString('en-US');
+    const stats={available:units.filter(u=>u.status==='available').length};
+    const titleFor=f=>f===8?'Penthouse Level':`Floor 0${f}`,subFor=f=>f===8?'Sky Residence':(f===1?'Garden Residences':'Signature Residences');
+    const seg=a=>`cursor:pointer;padding:6px 15px;border-radius:24px;font-size:11px;font-weight:600;letter-spacing:.05em;transition:all .25s;color:${a?'#0a0d12':'#9a948a'};background:${a?'#c9a24b':'transparent'}`;
+    const pill=a=>`display:flex;align-items:center;gap:7px;cursor:pointer;padding:7px 13px;border-radius:24px;font-size:11px;font-weight:600;letter-spacing:.06em;transition:all .25s;background:${a?'rgba(201,162,75,.16)':'rgba(255,255,255,.03)'};border:1px solid ${a?'rgba(201,162,75,.4)':'rgba(255,255,255,.07)'};color:${a?'#e3c074':'#9a948a'}`;
+
+    const exData=[['exterior','◈','The Building','8 storeys · exterior'],['parking','▤','Parking','Basement · 2 levels'],['lobby','✦','Grand Lobby','Double-height arrival'],['pool','≋','Pool Deck','25m infinity edge'],['gym','◬','Fitness Studio','Equipped + yoga'],['sky','☆','Sky Lounge','Rooftop · 360° city']];
+    const active=v=>st.view===v||(v==='exterior'&&st.view==='interior');
+    const exploreList=exData.map(([v,gl,t,s])=>{const a=st.view===v;return{key:v,glyph:gl,title:t,sub:s,onSelect:()=>this.setState({view:v,room:'overview'}),
+      rowStyle:`display:flex;align-items:center;gap:11px;padding:9px 9px;border-radius:8px;cursor:pointer;margin-bottom:3px;transition:background .2s;background:${a?'rgba(201,162,75,.10)':'transparent'};border:1px solid ${a?'rgba(201,162,75,.22)':'transparent'}`,
+      iconBg:a?'rgba(201,162,75,.18)':'rgba(255,255,255,.04)',iconColor:a?'#e3c074':'#8d8b85',titleColor:a?'#f3ecdd':'#c8c2b6'};});
+
+    const floorsList=[];for(let f=8;f>=1;f--){const us=units.filter(u=>u.floor===f),avail=us.filter(u=>u.status==='available').length,isSel=st.floor===f&&st.view!=='interior';
+      floorsList.push({key:f,num:f===8?'PH':'0'+f,title:titleFor(f),sub:subFor(f),avail,expanded:st.floor===f,numColor:isSel?'#c9a24b':'#6f6c64',titleColor:isSel?'#f3ecdd':'#c8c2b6',
+        rowStyle:`display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border-radius:7px;cursor:pointer;margin-bottom:3px;transition:background .2s;background:${isSel?'rgba(201,162,75,.10)':'transparent'};border:1px solid ${isSel?'rgba(201,162,75,.22)':'transparent'}`,
+        onSelect:()=>{const a=us.find(u=>u.status==='available')||us[0];this.setState({floor:f,unit:a?a.id:null,view:'exterior'});},
+        units:us.map(u=>{const usel=st.unit===u.id;return{key:u.id,label:u.label,type:u.type,sqm:u.sqm,priceStr:u.priceStr,statusColor:this.statusColor(u.status),labelColor:usel?'#c9a24b':'#c8c2b6',rowStyle:`display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background .18s;background:${usel?'rgba(201,162,75,.10)':'rgba(255,255,255,.015)'}`,onSelect:()=>this.setState({floor:f,unit:u.id,view:'exterior'})};})});}
+
+    const su=this.unitById(st.unit);let sel=null;if(su){const sc=this.statusColor(su.status);sel={label:su.label,floorLabel:su.floor===8?'PENTHOUSE LEVEL':`FLOOR 0${su.floor} · AURA`,type:su.type+(su.kind==='PH'?' · Private Sky Terrace':' Residence'),beds:su.beds,baths:su.baths,sqm:su.sqm,priceStr:su.priceStr,status:su.status,statusColor:sc,statusLabel:su.status.toUpperCase(),statusBg:su.status==='available'?'rgba(201,162,75,.12)':'rgba(255,255,255,.04)',statusBorder:sc+'66'};}
+
+    // interior room chips
+    const roomSets={'1BR':[['overview','Overview'],['living','Living'],['kitchen','Kitchen'],['bedroom','Bedroom'],['bath','Bathroom'],['balcony','Balcony']],
+      '2BR':[['overview','Overview'],['living','Living'],['kitchen','Kitchen'],['master','Master'],['bed2','2nd Bed'],['bath','Bathroom'],['balcony','Balcony']],
+      'PH':[['overview','Overview'],['living','Living'],['kitchen','Kitchen'],['dining','Dining'],['master','Master Suite'],['terrace','Sky Terrace']]};
+    const ik=su?su.kind:'1BR';
+    const roomChips=(roomSets[ik]||roomSets['1BR']).map(([a,l])=>{const on=st.room===a;return{key:a,label:l,onSelect:()=>this.setState({room:a}),style:`cursor:pointer;padding:9px 16px;border-radius:24px;font-size:11.5px;font-weight:600;letter-spacing:.04em;transition:all .2s;background:${on?'#c9a24b':'rgba(255,255,255,.05)'};color:${on?'#0a0d12':'#cfc8bb'};border:1px solid ${on?'#c9a24b':'rgba(255,255,255,.1)'}`};});
+
+    const amMap={parking:['Resident Parking','Secure two-level basement parking with EV charging bays, clear wayfinding and direct lift access to every floor.'],lobby:['The Grand Lobby','A double-height arrival with marble floors, a backlit feature wall, concierge desk and three high-speed passenger lifts.'],pool:['Infinity Pool Deck','A 25-metre edge pool framed by timber decking, sun loungers and a private cabana on the elevated amenity terrace.'],gym:['Fitness Studio','Fully-equipped gym with cardio, free weights and a dedicated yoga zone behind a floor-to-ceiling glass façade.'],sky:['Sky Lounge','Rooftop social lounge with bar, fire pit, pergola seating and an unbroken 360° city skyline.']};
+    const am=amMap[st.view]||['',''];
+
+    return {setSky:el=>{this.skyEl=el;},setGl:el=>{this.glEl=el;},setOverlay:el=>{this.overlayEl=el;},setLoad:el=>{this.loadEl=el;},
+      stats,exploreList,floorsList,
+      showUnitPanel:st.view==='exterior'&&!!sel,sel,
+      showInteriorBar:st.view==='interior',roomChips,intTitle:su?(su.kind==='PH'?'Penthouse Residence':su.type+' Residence '+su.label):'',intSub:su?(su.floor===8?'PENTHOUSE LEVEL · '+su.sqm+'㎡':'FLOOR 0'+su.floor+' · '+su.sqm+'㎡'):'',
+      showAmenityBar:['parking','lobby','pool','gym','sky'].includes(st.view),amTitle:am[0],amDesc:am[1],
+      back:()=>this.setState({view:'exterior'}),enterUnit:()=>this.setState({view:'interior',room:'overview'}),
+      todDay:()=>this.setState({tod:'day'}),todDusk:()=>this.setState({tod:'dusk'}),todNight:()=>this.setState({tod:'night'}),
+      dayStyle:seg(st.tod==='day'),duskStyle:seg(st.tod==='dusk'),nightStyle:seg(st.tod==='night'),
+      toggleCutaway:()=>this.setState({cutaway:!st.cutaway}),cutStyle:pill(st.cutaway)};
+  }
+}
+</script>
+</body>
+</html>
