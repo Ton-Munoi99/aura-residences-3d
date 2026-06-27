@@ -80,6 +80,7 @@ function Exterior({ ext }) {
   useEffect(() => {
     const fg = ext.floorsGfx; if (!fg) return;
     const p = TOD[tod];
+    if (ext.louverFront) ext.louverFront.visible = !cutaway; // reveal interiors in dollhouse mode
     for (let f = 1; f <= 8; f++) {
       const g = fg[f]; const isSel = floor === f; const isHov = hover === f;
       if (isSel) { g.bandMat.color.setHex(0xc9a24b); g.bandMat.emissive.setHex(0xc9a24b); g.bandMat.emissiveIntensity = 0.55; }
