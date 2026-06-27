@@ -3,6 +3,7 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { makeKit } from '../three/kit.js';
 import { useStore } from '../store.js';
 import { UNITS, TOD, FH, statusColor } from '../data.js';
@@ -37,7 +38,7 @@ function Lights() {
       if (fill.current) fill.current.intensity = 0.12;
     } else {
       scene.fog.color.setHex(p.fog); scene.fog.density = p.fogD;
-      if (hemi.current) { hemi.current.color.setHex(p.hemiSky); hemi.current.groundColor.setHex(p.hemiGnd); hemi.current.intensity = Math.max(p.hemiI, 0.5); }
+      if (hemi.current) { hemi.current.color.setHex(p.hemiSky); hemi.current.groundColor.setHex(p.hemiGnd); hemi.current.intensity = Math.max(p.hemiI, 0.75); }
       if (dir.current) { dir.current.color.setHex(p.dirC); dir.current.intensity = p.dirI; dir.current.position.set(...p.dirPos); }
       if (fill.current) fill.current.intensity = 0.25;
     }
@@ -46,6 +47,7 @@ function Lights() {
 
   return (
     <>
+      <ambientLight intensity={0.18} color={0xbcc6d2} />
       <hemisphereLight ref={hemi} args={[0x29344f, 0x05070a, 0.5]} />
       <directionalLight
         ref={dir} args={[0xffffff, 1.0]} position={[-42, 44, 22]} castShadow
@@ -285,11 +287,14 @@ export default function Scene() {
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
       camera={{ fov: 42, near: 0.4, far: 500, position: [40, 28, 46] }}
-      onCreated={({ gl }) => {
+      onCreated={({ gl, scene }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.05;
+        gl.toneMappingExposure = 1.3;
         gl.shadowMap.type = THREE.PCFSoftShadowMap;
+        // Offline image-based lighting → realistic reflections on glass/metal.
+        const pmrem = new THREE.PMREMGenerator(gl);
+        scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
       }}
       style={{ position: 'absolute', inset: 0 }}
     >

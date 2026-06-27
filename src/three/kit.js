@@ -34,7 +34,14 @@ export function makeKit(THREE) {
     rug: M(0xb6a78f, 0.95), rugD: M(0x7d6f5c, 0.95), tile: M(0xeae6dd, 0.4, 0.05),
     car1: M(0x2a2e35, 0.4, 0.6), car2: M(0x6b1f24, 0.4, 0.6), car3: M(0xc9c4ba, 0.4, 0.6), carGlass: M(0x10151c, 0.2, 0.4, 0.7),
     gold: M(0xc9a24b, 0.4, 0.7), road: M(0x14171c, 0.85), brass: M(0xcaa15a, 0.3, 0.9),
+    // façade materials (modern glass tower)
+    concrete: M(0xe9e3d6, 0.9), concreteD: M(0x9a958c, 0.85),
+    mullion: M(0xb9a06a, 0.35, 0.9), // champagne aluminium
   };
+  // stronger environment reflections on the glassy/metal materials
+  MAT.metal.envMapIntensity = 1.4; MAT.steel.envMapIntensity = 1.3; MAT.brass.envMapIntensity = 1.5;
+  MAT.gold.envMapIntensity = 1.4; MAT.mullion.envMapIntensity = 1.5; MAT.water.envMapIntensity = 1.2;
+  MAT.marble.envMapIntensity = 1.1;
 
   // ---- low-level helpers ----
   const b = (w, h, d, mat) => new T.Mesh(new T.BoxGeometry(w, h, d), mat);
@@ -348,41 +355,63 @@ export function makeKit(THREE) {
   }
 
   function buildTower(building) {
-    const slabMat = MAT.dark;
-    const bandBase = () => new T.MeshStandardMaterial({ color: 0x14181e, roughness: 0.45, metalness: 0.65, emissive: 0x000000, emissiveIntensity: 0 });
-    const mkGlass = () => new T.MeshStandardMaterial({ color: 0x1a2230, roughness: 0.12, metalness: 0.15, transparent: true, opacity: 0.5, emissive: 0x000000, emissiveIntensity: 0 });
+    // premium dark-bronze spandrel (highlightable → turns gold when a floor is selected)
+    const bandBase = () => new T.MeshStandardMaterial({ color: 0x2c2a26, roughness: 0.4, metalness: 0.7, emissive: 0x000000, emissiveIntensity: 0, envMapIntensity: 1.1 });
+    // reflective blue curtain-wall glass
+    const mkGlass = () => new T.MeshStandardMaterial({ color: 0x2a4a60, roughness: 0.05, metalness: 0.85, transparent: true, opacity: 0.55, emissive: 0x000000, emissiveIntensity: 0, envMapIntensity: 1.7 });
     const floorsGfx = {}, pickBoxes = [];
     const buildFloor = (f) => {
       const isPH = f === 8, base = (f - 1) * FH, g = new T.Group(); building.add(g);
       const hx = isPH ? 8 : 12, hz = isPH ? 5.5 : 8;
-      p(g, b(24.6, 0.32, 16.6, slabMat), 0, base + 0.16, 0, true).receiveShadow = true;
-      const gh = FH - 0.6, gy = base + 0.16 + gh / 2 + 0.12, gMat = mkGlass(), glassPanels = {};
-      const front = p(g, b(hx * 2, gh, 0.12, gMat), 0, gy, hz); glassPanels.front = front;
-      p(g, b(hx * 2, gh, 0.12, gMat), 0, gy, -hz);
-      p(g, b(0.12, gh, hz * 2, gMat), -hx, gy, 0);
-      p(g, b(0.12, gh, hz * 2, gMat), hx, gy, 0);
+
+      // 1) slim bright floor-slab edge (clean horizontal line, not a heavy shelf)
+      p(g, b(hx * 2 + 0.7, 0.2, hz * 2 + 0.7, MAT.concrete), 0, base + 0.1, 0, true).receiveShadow = true;
+      // 2) spandrel highlight band sitting on the slab
       const bMat = bandBase();
-      p(g, b(hx * 2 + 0.5, 0.5, hz * 2 + 0.5, bMat), 0, base + FH - 0.05, 0, true);
-      const mul = new T.MeshStandardMaterial({ color: 0x0d1116, roughness: 0.5, metalness: 0.7 });
-      for (let i = -Math.floor(hx); i <= Math.floor(hx); i += 3) p(g, b(0.12, gh + 0.4, 0.12, mul), i, gy, hz);
-      [[-hx, hz], [hx, hz], [-hx, -hz], [hx, -hz]].forEach(([mx, mz]) => p(g, b(0.28, gh + 0.5, 0.28, mul), mx, gy, mz, true));
-      if (!isPH) {
-        [[-9, 4.5], [-3, 4.5], [3, 4.5], [9, 4.5]].forEach(([bx]) => exteriorBalcony(g, bx, base + 0.16, hz, 2.5));
-        [[-8, -4.5], [0, -4.5], [8, -4.5]].forEach(([bx]) => exteriorBalcony(g, bx, base + 0.16, -hz, 3.0, true));
+      p(g, b(hx * 2 + 0.72, 0.4, hz * 2 + 0.72, bMat), 0, base + 0.34, 0, true);
+
+      // 3) floor-to-ceiling curtain-wall glass
+      const gh = FH - 0.7, gy = base + 0.55 + gh / 2, gMat = mkGlass(), glassPanels = {};
+      const front = p(g, b(hx * 2, gh, 0.1, gMat), 0, gy, hz); glassPanels.front = front;
+      p(g, b(hx * 2, gh, 0.1, gMat), 0, gy, -hz);
+      p(g, b(0.1, gh, hz * 2, gMat), -hx, gy, 0);
+      p(g, b(0.1, gh, hz * 2, gMat), hx, gy, 0);
+
+      // 4) slim champagne vertical mullions (front + back rhythm) + corner columns
+      for (let x = -hx; x <= hx + 0.001; x += 2) {
+        p(g, b(0.07, gh + 0.3, 0.07, MAT.mullion), x, gy, hz + 0.03);
+        p(g, b(0.07, gh + 0.3, 0.07, MAT.mullion), x, gy, -hz - 0.03);
       }
+      [[-hx, hz], [hx, hz], [-hx, -hz], [hx, -hz]].forEach(([mx, mz]) => p(g, b(0.16, FH, 0.16, MAT.mullion), mx, base + FH / 2, mz, true));
+
+      // 5) continuous cantilevered balconies with frameless glass railing (front + back)
+      if (!isPH) {
+        [hz, -hz].forEach((sz) => {
+          const s = Math.sign(sz);
+          p(g, b(hx * 2 + 0.5, 0.1, 1.5, MAT.concrete), 0, base + 0.3, sz + s * 0.75, true).receiveShadow = true;
+          p(g, b(hx * 2 + 0.5, 0.85, 0.04, MAT.glass), 0, base + 0.78, sz + s * 1.5);
+          p(g, b(hx * 2 + 0.6, 0.05, 0.07, MAT.mullion), 0, base + 1.2, sz + s * 1.5);
+        });
+      }
+
+      // 6) interior status plates (drive hotspot colour + cutaway dollhouse)
       const plates = {};
       UNITS.filter((u) => u.floor === f).forEach((u) => {
         const pMat = new T.MeshStandardMaterial({ color: new T.Color(statusColor(u.status)), roughness: 0.5, metalness: 0.2, emissive: new T.Color(0xff9d40), emissiveIntensity: 0 });
-        const pl = p(g, b(u.cell.w - 0.5, 0.14, u.cell.d - 0.5, pMat), u.cell.cx, base + 0.34, u.cell.zc);
+        const pl = p(g, b(u.cell.w - 0.5, 0.12, u.cell.d - 0.5, pMat), u.cell.cx, base + 0.3, u.cell.zc);
         plates[u.id] = { mesh: pl, mat: pMat, worldY: base + 0.9, u };
       });
+
+      // 7) penthouse setback crown — wrap terrace with glass balustrade + roof slab
       if (isPH) {
-        const railMat = MAT.steel;
-        [[24.2, 0.1, 0, 8.2], [24.2, 0.1, 0, -8.2], [0.1, 16.2, 12.1, 0], [0.1, 16.2, -12.1, 0]]
-          .forEach(([w, d, x, z]) => p(g, b(w, 1.1, d, railMat), x, base + 0.9, z, true));
-        p(g, b(17, 0.3, 12, slabMat), 0, base + FH + 0.05, 0, true);
+        [[24.4, 0.08, 0, 8.3], [24.4, 0.08, 0, -8.3], [0.08, 16.4, 12.2, 0], [0.08, 16.4, -12.2, 0]].forEach(([w, d, x, z]) => {
+          p(g, b(w * 0.99, 0.9, d * 0.99, MAT.glass), x, base + 0.6, z);
+          p(g, b(w, 0.06, d, MAT.mullion), x, base + 1.05, z);
+        });
+        p(g, b(17, 0.3, 12, MAT.concrete), 0, base + FH + 0.05, 0, true).receiveShadow = true;
       }
-      const pb = p(g, new T.Mesh(new T.BoxGeometry(hx * 2 + 0.6, FH, hz * 2 + 0.6), new T.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })), 0, base + FH / 2, 0);
+
+      const pb = p(g, new T.Mesh(new T.BoxGeometry(hx * 2 + 0.8, FH, hz * 2 + 0.8), new T.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })), 0, base + FH / 2, 0);
       pb.userData.floor = f; pickBoxes.push(pb);
       floorsGfx[f] = { group: g, glassMat: gMat, bandMat: bMat, glassPanels, plates, base, isPH };
     };
@@ -416,9 +445,9 @@ export function makeKit(THREE) {
   function buildExterior() {
     const root = new T.Group();
     const ground = p(root, new T.Mesh(new T.CircleGeometry(160, 64), MAT.road), 0, -0.02, 0); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
-    const plaza = p(root, new T.Mesh(new T.CircleGeometry(34, 64), MAT.marbleD), 0, 0, 0); plaza.rotation.x = -Math.PI / 2; plaza.receiveShadow = true;
-    p(root, b(30, 2.4, 22, MAT.stone), 0, -1.2, 0, true);
-    p(root, b(31, 0.3, 23, MAT.marbleD), 0, 0.05, 0);
+    const plaza = p(root, new T.Mesh(new T.CircleGeometry(34, 64), MAT.concreteD), 0, 0, 0); plaza.rotation.x = -Math.PI / 2; plaza.receiveShadow = true;
+    p(root, b(30, 2.4, 22, MAT.concreteD), 0, -1.2, 0, true);
+    p(root, b(31, 0.3, 23, MAT.concrete), 0, 0.05, 0);
     p(root, b(11, 0.3, 5, MAT.dark), 0, 3.0, 12.4, true);
     for (let x = -4; x <= 4; x += 4) p(root, cy(0.18, 0.18, 3, MAT.steel), x, 1.5, 11.2);
     [[-18, 16, MAT.car3], [-12, 18, MAT.car1]].forEach(([x, z, c]) => { const car = fCar(c); car.position.set(x, 0, z); car.rotation.y = 0.4; root.add(car); });
